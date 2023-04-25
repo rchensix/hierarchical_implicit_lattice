@@ -1,5 +1,4 @@
 import numpy as np
-from sympy import *
 
 # Space group 215 point symmetries
 # See http://img.chem.ucl.ac.uk/sgp/large/215az1.htm
@@ -115,3 +114,25 @@ for symmetry in kSymmetries:
         terms[term] = 1
 print(terms)
 print(len(terms))
+
+kIntegerLatticePlanes = np.array([
+    [0, 1, 1],
+    [0, 1, -1],
+    [1, -1, 0],
+], dtype=int)
+
+pts = list()
+for i in range(10):
+    for j in range(10):
+        for k in range(10):
+            if j + k < 0: continue
+            if j - k < 0: continue
+            if i - j < 0: continue
+            pts.append((i, j, k))
+pts = np.array(pts)
+import matplotlib.pyplot as plt
+# ax = plt.figure().add_subplot(projection='3d')
+plt.plot(pts[:, 0], pts[:, 1])
+print(pts[:, 0])
+print(pts[:, 1])
+plt.show()
