@@ -6,6 +6,8 @@
 # This file contains functions for constructing Fourier basis functions with
 # tetrahedral symmetry.
 
+from typing import Tuple
+
 import numpy as np
 import scipy.fft
 
@@ -174,7 +176,7 @@ class TetSymmetry:
         '''
         assert len(data.shape) == 3, 'data must be of shape (N, N, N)'
         n = data.shape[0]
-        assert data.shape[1] == n and data.shape[2] == 2, \
+        assert data.shape[1] == n and data.shape[2] == n, \
             'data must be of shape (N, N, N)'
         assert n > 2, 'cannot construct approximation with N={}'.format(n)
         self.n = n
@@ -182,8 +184,8 @@ class TetSymmetry:
         self.normal_to_face = normal_to_face
         self._ComputeCoeffs()
 
-    def EvalNaive(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) \
-                  -> np.ndarray:
+    def EvaluateNaive(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) \
+                      -> np.ndarray:
         '''Evaluate the fitted function on points specified by x, y, z.
         The inputs x, y, z should be generated using np.meshgrid with
         indexing='ij'.
@@ -200,14 +202,18 @@ class TetSymmetry:
             vals: (P, Q, R) - evaluated complex values.
         '''
         assert len(x.shape) == 3, 'x, y, z must be of shape (P, Q, R)'
-        assert x.shape == y.shape and x.shape == z.shape,
+        assert x.shape == y.shape and x.shape == z.shape, \
             'x, y, z must all be the same shape'
         p, q, r = x.shape
-        vals = np.zeros(p * q * r)
+        vals = np.zeros(p * q * r, dtype='complex128')
         xyz = np.concatenate((x.reshape(-1, 1), y.reshape(-1, 1),
                               z.reshape(-1, 1)), axis=1)
+        # NOTE: scipy.fft assumes input was discretized in the domain [0, 1]^3.
+        # However, we assume the input was discretized in the domain
+        # [-0.5, 0.5]^3, so we do a shift here by 0.5 in every direction.
+        xyz += 0.5
         for key, subkey_dict in self.freqs.items():
-            for subkey, num_appearances in subkey_dict:
+            for subkey, num_appearances in subkey_dict.items():
                 f = np.array(subkey)
                 vals += self.coeffs[key] * num_appearances * \
                         np.exp(2j * np.pi * xyz.dot(f))
@@ -252,7 +258,7 @@ class TetSymmetry:
                 coeff_sum += num_appearances * self._GetCoeff(subkey)
                 normalizing_coeff += num_appearances**2
             normalizing_coeff = np.sqrt(normalizing_coeff)
-            self.coeffs[key] = normalizing_coeff * coeff_sum
+            self.coeffs[key] = coeff_sum / normalizing_coeff
         # Maybe modify the coefficients if normal_to_face=True.
         if self.normal_to_face:
             self.coeffs = self._ComputeCoeffsNormalToFace()
@@ -273,27 +279,3 @@ class TetSymmetry:
     
     def _ComputeCoeffsNormalToFace(self):
         raise NotImplementedError('normal_to_face=True not supported yet')
-
-def _Coeff(f: np.ndarray) -> float:
-    '''Computes "K", the normalizing coefficient in front of a basis function.
-
-    Args:
-        f: (3,) - integer frequency 3-vector.
-    ReturnsL
-        k: float - normalizinng coefficient.
-    '''
-    # There's probably more efficient ways to do this but this is easier to
-    # understand.
-    freq_count = dict()
-    for m in kSymmetries:
-        freq = m.transpose() @ f
-        key = tuple(freq)
-        if key in freq_count:
-            freq_count[key] += 1
-        else:
-            freq_count[key] = 1
-    total = 0
-    for _, v in freq_count.items():
-        total += v**2
-    return np.sqrt(total)
-

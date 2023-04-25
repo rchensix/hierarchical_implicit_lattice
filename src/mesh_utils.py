@@ -9,7 +9,6 @@ from typing import List, Tuple, Union
 
 import meshio
 import numpy as np
-import trimesh
 
 def ReadTriangleMesh(path: str) -> Tuple[np.ndarray, np.ndarray]:
     '''Reads triangle mesh from path using meshio library.
@@ -207,17 +206,3 @@ def Rotate(points: np.ndarray, axis: np.ndarray, angle_deg: float,
               axis_n*np.dot(pts, axis_n).reshape((-1, 1))*(1 - np.cos(angle_rad))
     # Undo offset
     return rotated + center
-
-def IsPointInsideTriangleMesh(query_points: np.ndarray, mesh_path: str) \
-        -> np.ndarray:
-    '''Returns bool array where true indicates a given point is inside triangle
-    mesh.
-
-    Args:
-        query_pts: (N, 3) - points to query inside/outside status.
-        mesh_path: str - path to triangle mesh.
-    Returns:
-        containment_status: (N,) - bool array of inside/outside status.
-    '''
-    mesh = trimesh.load_mesh(mesh_path)
-    return mesh.contains(query_points)
