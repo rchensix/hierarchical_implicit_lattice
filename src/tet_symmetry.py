@@ -215,8 +215,8 @@ class TetSymmetry:
         for key, subkey_dict in self.freqs.items():
             for subkey, num_appearances in subkey_dict.items():
                 f = np.array(subkey)
-                vals += self.coeffs[key] * num_appearances * \
-                        np.exp(2j * np.pi * xyz.dot(f))
+                vals += self.basis_coeffs[key] * self.normalizing_coeffs[key] \
+                        * num_appearances * np.exp(2j * np.pi * xyz.dot(f))
         return vals.reshape(x.shape)
 
     def _ComputeCoeffs(self):
@@ -249,19 +249,21 @@ class TetSymmetry:
         # Compute coefficient for each unique frequency triplet as well as
         # normalizing coefficient out front to ensure the basis functions are
         # orthonormal.
-        self.coeffs = dict()
+        self.basis_coeffs = dict()
+        self.normalizing_coeffs = dict()
         for key, subfreq_dict in self.freqs.items():
             normalizing_coeff = 0
-            coeff_sum = 0
+            basis_coeff_sum = 0
             for subkey, num_appearances in subfreq_dict.items():
                 # Get the FFT coefficient corresponding to subkey.
-                coeff_sum += num_appearances * self._GetCoeff(subkey)
+                basis_coeff_sum += num_appearances * self._GetCoeff(subkey)
                 normalizing_coeff += num_appearances**2
-            normalizing_coeff = np.sqrt(normalizing_coeff)
-            self.coeffs[key] = coeff_sum / normalizing_coeff
+            self.normalizing_coeffs[key] = 1.0 / np.sqrt(normalizing_coeff)
+            self.basis_coeffs[key] = basis_coeff_sum * \
+                                     self.normalizing_coeffs[key]
         # Maybe modify the coefficients if normal_to_face=True.
         if self.normal_to_face:
-            self.coeffs = self._ComputeCoeffsNormalToFace()
+            self.basis_coeffs = self._ComputeCoeffsNormalToFace()
     
     def _GetCoeff(self, f: Tuple[int, int, int]) -> float:
         '''Get FFT coefficient at (fx, fy, fz).

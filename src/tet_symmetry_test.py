@@ -17,11 +17,10 @@ class TestTetSymmetry(unittest.TestCase):
         n = 4
         v = np.arange(-n // 2, n // 2) / n
         x, y, z = np.meshgrid(v, v, v, indexing='ij')
-        data = np.cos(np.pi * x) + np.cos(np.pi * y) + np.cos(np.pi * z)
+        data = np.cos(2.0 * np.pi * x) + np.cos(2.0 * np.pi * y) + \
+               np.cos(2.0 * np.pi * z)
         ts = tet_symmetry.TetSymmetry(data)
         vals = ts.EvaluateNaive(x, y, z)
-        print(data[0, 0, 0])
-        print(vals[0, 0, 0])
         self.assertLess(np.linalg.norm(data - vals), 1.0e-6)
 
 if __name__ == '__main__':
