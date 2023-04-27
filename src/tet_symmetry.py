@@ -135,6 +135,15 @@ kIntegerLatticePlanes = np.array([
     [-1, 1, 0],
 ], dtype=int)
 
+def _IsSymmetric(mat: np.ndarray):
+    if mat.shape[0] != mat.shape[1]: return False
+    n = mat.shape[0]
+    kTol = 1e-12
+    for i in range(n):
+        for j in range(n):
+            if np.abs(mat[i][j] - mat[j][i]) > kTol: return False
+    return True
+
 def _IsInsideIntegerLatticePlanes(fx: int, fy: int, fz: int) -> bool:
     '''Returns True if (fx, fy, fz) lies on or inside the tetrahedron bounded
     by kIntegerLatticePlanes.
@@ -182,6 +191,7 @@ class TetSymmetry:
         self.n = n
         self.data = np.copy(data) if copy_data else data
         self.normal_to_face = normal_to_face
+        self.kTol = 1e-12  # Used to compare against 0
         self._ComputeCoeffs()
 
     def EvaluateNaive(self, x: np.ndarray, y: np.ndarray, z: np.ndarray) \
@@ -213,6 +223,8 @@ class TetSymmetry:
         # [-0.5, 0.5]^3, so we do a shift here by 0.5 in every direction.
         xyz += 0.5
         for key, subkey_dict in self.freqs.items():
+            # Skip terms with nearly zero coefficients.
+            if np.abs(self.basis_coeffs[key]) < self.kTol: continue
             for subkey, num_appearances in subkey_dict.items():
                 f = np.array(subkey)
                 vals += self.basis_coeffs[key] * self.normalizing_coeffs[key] \
@@ -280,4 +292,115 @@ class TetSymmetry:
         return self.fftn[idx0, idx1, idx2]
     
     def _ComputeCoeffsNormalToFace(self):
-        raise NotImplementedError('normal_to_face=True not supported yet')
+        # Get affine transform that projects points onto a single tetrahedron
+        # face on the unit tetrahedron.
+        # We'll use the face defined by kUnitTetPts 1 through 3, which has
+        # n = [1, 1, 1].
+        # WARNING: This is hardcoded based on how kUnitTetPts is defined.
+        # If you change kUnitTetPts, you need to manually change this too.
+        p_t = np.array([
+            [1, 0, -1],
+            [0, 1, -1],
+            [0, 0, 0],
+        ], dtype=int)
+        b = np.array([0, 0, np.sum(kUnitTetPts[1])])
+        
+        # Collect all equality constraint equations.
+        # There is one equation per unique p_t @ f_subkey.
+        # f^T m x = f^t m (p x + b) = (m (p x + b))^t f = (m p x + m b)^t f
+        # = x^t p^t m^t f + b^t m^t f
+        # (Px + B)^T * m^T * f
+        # x^T * P^T * m^T * f
+        # The unknowns are the coefficients for each unique f.
+        self.constraints = dict()
+        for key, subfreq_dict in self.freqs.items():
+            # print('Key: ', key)
+            # print(subfreq_dict)
+            # Skip the constant term since it doesn't contribute to the
+            # gradient.
+            if key == (0, 0, 0): continue
+            # Skip terms with nearly zero coefficient.
+            if np.abs(self.basis_coeffs[key]) < self.kTol: continue
+            for subkey, num_appearances in subfreq_dict.items():
+                f_subkey = np.array(subkey)
+                f_proj = p_t.dot(f_subkey)
+                print('key', key)
+                print('f_subkey', f_subkey)
+                print('f_proj', f_proj)
+                offset = np.exp(2j * np.pi * b.dot(f_subkey))
+                coeff = self.normalizing_coeffs[key] * self.basis_coeffs[key] \
+                        * num_appearances * offset * 2j * np.pi \
+                        * np.sum(f_subkey)
+                projkey = tuple(f_proj)
+                if projkey in self.constraints:
+                    if key in self.constraints[projkey]:
+                        self.constraints[projkey][key] += coeff
+                    else:
+                        self.constraints[projkey][key] = coeff
+                else:
+                    self.constraints[projkey] = {
+                        key: coeff
+                    }
+        # for k, v in self.constraints.items():
+        #     print('projkey: ', k)
+        #     print('coeffs: ', v)
+        self._SolveSystemNaive()
+    
+    def _SolveSystemNaive(self):
+        '''Assembles constraints and original unconstrained coefficients into a
+        matrix system using Lagrange multipliers and solves the system for the
+        modified coefficients.
+
+        WARNING: The matrix system is symmetric and sparse, yet this function
+        solves it using dense complex matrices. Obviously this could be
+        greatly optimized...
+        '''
+        # Map each key to a unique integer corresponding to a row in the
+        # unknown coefficients vector. The order doesn't really matter.
+        key_to_index = dict()
+        num_keys = 0
+        for key in self.freqs:
+            # Skip the constant term since it's known and won't be changed.
+            if key == (0, 0, 0): continue
+            key_to_index[key] = num_keys
+            num_keys += 1
+        num_constraints = len(self.constraints)
+        mat_size = num_keys + num_constraints
+        mat = np.zeros((mat_size, mat_size), dtype='complex128')
+        # Set diagonal to 1 up through num_keys.
+        for i in range(num_keys):
+            mat[i, i] = 1.0
+        row = num_keys
+        for _, coeffs_dict in self.constraints.items():
+            for key, coeff in coeffs_dict.items():
+                index = key_to_index[key]
+                mat[row, index] = coeff
+                mat[index, row] = coeff
+            row += 1
+        rhs = np.zeros(mat_size, dtype='complex128')
+        for key, index in key_to_index.items():
+            rhs[index] = self.basis_coeffs[key]
+        assert _IsSymmetric(mat)
+        new_coeffs = np.linalg.solve(mat, rhs)
+        for key, index in key_to_index.items():
+            self.basis_coeffs[key] = new_coeffs[index]
+        # Remove rows and columns that are all zeros.
+        # old_to_new = dict()
+        # num_nonzero_rows = 0
+        # for i in range(mat_size):
+        #     if np.linalg.norm(np.sum(mat[i])) < self.kTol: continue
+        #     old_to_new[i] = num_nonzero_rows
+        #     num_nonzero_rows += 1
+        # mat_pruned = np.zeros((num_nonzero_rows, num_nonzero_rows), dtype='complex128')
+        # rhs_pruned = np.zeros(num_nonzero_rows, dtype='complex128')
+        # for i in range(mat_size):
+        #     if i not in old_to_new: continue
+        #     rhs_pruned[old_to_new[i]] = rhs[i]
+        #     for j in range(mat_size):
+        #         if j not in old_to_new: continue
+        #         mat_pruned[old_to_new[i], old_to_new[j]] = mat[i, j]
+        # assert _IsSymmetric(mat_pruned)
+        # new_coeffs_pruned = np.linalg.solve(mat_pruned, rhs_pruned)
+        # for key, index in key_to_index.items():
+        #     self.basis_coeffs[key] = new_coeffs[old_to_new[index]]
+
