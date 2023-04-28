@@ -162,16 +162,6 @@ def _IsInsideIntegerLatticePlanes(fx: int, fy: int, fz: int) -> bool:
         if fx * nx + fy * ny + fz * nz > 0: return False
     return True
 
-def _PrintMatrix(m: np.ndarray):
-    print('Real part')
-    m_real = np.real(m)
-    m_real[np.abs(m_real) < 1e-12] = 0
-    print(m_real)
-    print('Imag part')
-    m_imag = np.imag(m)
-    m_imag[np.abs(m_imag) < 1e-12] = 0
-    print(np.round(m_imag, 1))
-
 class TetSymmetry:
     def __init__(self, data: np.ndarray, normal_to_face: bool=False,
                  copy_data: bool=True):
@@ -235,9 +225,6 @@ class TetSymmetry:
         xyz += 0.5
         for key, subkey_dict in self.freqs.items():
             # Skip terms with nearly zero coefficients.
-            print('Key', key)
-            print(self.basis_coeffs)
-            print('Value', self.basis_coeffs[key])
             if np.abs(self.basis_coeffs[key]) < self.kTol: continue
             for subkey, num_appearances in subkey_dict.items():
                 f = np.array(subkey)
@@ -374,9 +361,6 @@ class TetSymmetry:
                     break
             if is_nonzero:
                 self.constraints[projkey] = coeffs_dict
-        for k, v in self.constraints.items():
-            print('projkey: ', k)
-            print('coeffs: ', v)
         self._OptimizeCoeffs()
     
     def _OptimizeCoeffs(self):
@@ -417,66 +401,3 @@ class TetSymmetry:
         # Set new coefficients
         for key, index in key_to_index.items():
             self.basis_coeffs[key] = sol[index]
-        print(self.basis_coeffs)
-    
-    def _SolveSystemNaive(self):
-        '''Assembles constraints and original unconstrained coefficients into a
-        matrix system using Lagrange multipliers and solves the system for the
-        modified coefficients.
-
-        WARNING: The matrix system is symmetric and sparse, yet this function
-        solves it using dense complex matrices. Obviously this could be
-        greatly optimized...
-        '''
-        # Map each key to a unique integer corresponding to a row in the
-        # unknown coefficients vector. The order doesn't really matter.
-        key_to_index = dict()
-        num_keys = 0
-        for key in self.freqs:
-            # Skip the constant term since it's known and won't be changed.
-            if key == (0, 0, 0): continue
-            key_to_index[key] = num_keys
-            num_keys += 1
-        num_constraints = len(self.constraints)
-        mat_size = num_keys + num_constraints
-        mat = np.zeros((mat_size, mat_size), dtype='complex128')
-        # Set diagonal to 1 up through num_keys.
-        for i in range(num_keys):
-            mat[i, i] = 1.0
-        row = num_keys
-        for _, coeffs_dict in self.constraints.items():
-            for key, coeff in coeffs_dict.items():
-                index = key_to_index[key]
-                mat[row, index] = coeff
-                mat[index, row] = coeff
-            row += 1
-        rhs = np.zeros(mat_size, dtype='complex128')
-        print(self.basis_coeffs)
-        for key, index in key_to_index.items():
-            rhs[index] = self.basis_coeffs[key]
-        assert _IsSymmetric(mat)
-        _PrintMatrix(mat)
-        _PrintMatrix(rhs)
-        new_coeffs = np.linalg.solve(mat, rhs)
-        for key, index in key_to_index.items():
-            self.basis_coeffs[key] = new_coeffs[index]
-        # Remove rows and columns that are all zeros.
-        # old_to_new = dict()
-        # num_nonzero_rows = 0
-        # for i in range(mat_size):
-        #     if np.linalg.norm(np.sum(mat[i])) < self.kTol: continue
-        #     old_to_new[i] = num_nonzero_rows
-        #     num_nonzero_rows += 1
-        # mat_pruned = np.zeros((num_nonzero_rows, num_nonzero_rows), dtype='complex128')
-        # rhs_pruned = np.zeros(num_nonzero_rows, dtype='complex128')
-        # for i in range(mat_size):
-        #     if i not in old_to_new: continue
-        #     rhs_pruned[old_to_new[i]] = rhs[i]
-        #     for j in range(mat_size):
-        #         if j not in old_to_new: continue
-        #         mat_pruned[old_to_new[i], old_to_new[j]] = mat[i, j]
-        # assert _IsSymmetric(mat_pruned)
-        # new_coeffs_pruned = np.linalg.solve(mat_pruned, rhs_pruned)
-        # for key, index in key_to_index.items():
-        #     self.basis_coeffs[key] = new_coeffs[old_to_new[index]]
-
