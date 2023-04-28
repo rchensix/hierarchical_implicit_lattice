@@ -8,6 +8,7 @@
 
 from typing import Tuple
 
+import cvxpy as cp
 import numpy as np
 import scipy.fft
 
@@ -161,6 +162,16 @@ def _IsInsideIntegerLatticePlanes(fx: int, fy: int, fz: int) -> bool:
         if fx * nx + fy * ny + fz * nz > 0: return False
     return True
 
+def _PrintMatrix(m: np.ndarray):
+    print('Real part')
+    m_real = np.real(m)
+    m_real[np.abs(m_real) < 1e-12] = 0
+    print(m_real)
+    print('Imag part')
+    m_imag = np.imag(m)
+    m_imag[np.abs(m_imag) < 1e-12] = 0
+    print(np.round(m_imag, 1))
+
 class TetSymmetry:
     def __init__(self, data: np.ndarray, normal_to_face: bool=False,
                  copy_data: bool=True):
@@ -224,6 +235,9 @@ class TetSymmetry:
         xyz += 0.5
         for key, subkey_dict in self.freqs.items():
             # Skip terms with nearly zero coefficients.
+            print('Key', key)
+            print(self.basis_coeffs)
+            print('Value', self.basis_coeffs[key])
             if np.abs(self.basis_coeffs[key]) < self.kTol: continue
             for subkey, num_appearances in subkey_dict.items():
                 f = np.array(subkey)
@@ -274,8 +288,7 @@ class TetSymmetry:
             self.basis_coeffs[key] = basis_coeff_sum * \
                                      self.normalizing_coeffs[key]
         # Maybe modify the coefficients if normal_to_face=True.
-        if self.normal_to_face:
-            self.basis_coeffs = self._ComputeCoeffsNormalToFace()
+        if self.normal_to_face: self._ComputeCoeffsNormalToFace()
     
     def _GetCoeff(self, f: Tuple[int, int, int]) -> float:
         '''Get FFT coefficient at (fx, fy, fz).
@@ -292,59 +305,119 @@ class TetSymmetry:
         return self.fftn[idx0, idx1, idx2]
     
     def _ComputeCoeffsNormalToFace(self):
-        # Get affine transform that projects points onto a single tetrahedron
-        # face on the unit tetrahedron.
-        # We'll use the face defined by kUnitTetPts 1 through 3, which has
-        # n = [1, 1, 1].
+        # Get affine transform that projects points onto all four tetrahedron
+        # faces of the unit tetrahedron.
         # WARNING: This is hardcoded based on how kUnitTetPts is defined.
         # If you change kUnitTetPts, you need to manually change this too.
-        p_t = np.array([
-            [1, 0, -1],
-            [0, 1, -1],
-            [0, 0, 0],
+        normals = np.array([
+            [1, 1, 1],
+            [-1, -1, 1],
+            [1, -1, -1],
+            [-1, 1, -1],
         ], dtype=int)
-        b = np.array([0, 0, np.sum(kUnitTetPts[1])])
-        
-        # Collect all equality constraint equations.
-        # There is one equation per unique p_t @ f_subkey.
-        # f^T m x = f^t m (p x + b) = (m (p x + b))^t f = (m p x + m b)^t f
-        # = x^t p^t m^t f + b^t m^t f
-        # (Px + B)^T * m^T * f
-        # x^T * P^T * m^T * f
-        # The unknowns are the coefficients for each unique f.
-        self.constraints = dict()
-        for key, subfreq_dict in self.freqs.items():
-            # print('Key: ', key)
-            # print(subfreq_dict)
-            # Skip the constant term since it doesn't contribute to the
-            # gradient.
-            if key == (0, 0, 0): continue
-            # Skip terms with nearly zero coefficient.
-            if np.abs(self.basis_coeffs[key]) < self.kTol: continue
-            for subkey, num_appearances in subfreq_dict.items():
-                f_subkey = np.array(subkey)
-                f_proj = p_t.dot(f_subkey)
-                print('key', key)
-                print('f_subkey', f_subkey)
-                print('f_proj', f_proj)
-                offset = np.exp(2j * np.pi * b.dot(f_subkey))
-                coeff = self.normalizing_coeffs[key] * self.basis_coeffs[key] \
-                        * num_appearances * offset * 2j * np.pi \
-                        * np.sum(f_subkey)
-                projkey = tuple(f_proj)
-                if projkey in self.constraints:
-                    if key in self.constraints[projkey]:
-                        self.constraints[projkey][key] += coeff
+        proj_mats_transp = np.array([
+            [[1, 0, -1],
+             [0, 1, -1],
+             [0, 0, 0]],
+            [[1, 0, 1],
+             [0, 1, 1],
+             [0, 0, 0]],
+            [[1, 0, 1],
+             [0, 1, -1],
+             [0, 0, 0]],
+            [[1, 0, -1],
+             [0, 1, 1],
+             [0, 0, 0]],
+        ], dtype=int)
+        offsets = np.array([
+            [0, 0, 0.5],
+            [0, 0, 0.5],
+            [0, 0, -0.5],
+            [0, 0, -0.5],
+        ])
+        for i in range(1):
+            p_t = proj_mats_transp[i]
+            b = offsets[i]
+            n = normals[i]
+            # Collect all equality constraint equations.
+            # There is one equation per unique p_t @ f_subkey.
+            # The unknowns are the coefficients for each unique f.
+            constraints = dict()
+            for key, subfreq_dict in self.freqs.items():
+                # Skip the constant term since it doesn't contribute to the
+                # gradient.
+                if key == (0, 0, 0): continue
+                for subkey, num_appearances in subfreq_dict.items():
+                    f_subkey = np.array(subkey)
+                    f_proj = p_t.dot(f_subkey)
+                    b_term = np.exp(2j * np.pi * b.dot(f_subkey))
+                    grad_term = 2j * np.pi * n.dot(f_subkey)
+                    coeff = self.normalizing_coeffs[key] * num_appearances * \
+                            b_term * grad_term
+                    projkey = tuple(f_proj)
+                    if projkey in constraints:
+                        if key in constraints[projkey]:
+                            constraints[projkey][key] += coeff
+                        else:
+                            constraints[projkey][key] = coeff
                     else:
-                        self.constraints[projkey][key] = coeff
-                else:
-                    self.constraints[projkey] = {
-                        key: coeff
-                    }
-        # for k, v in self.constraints.items():
-        #     print('projkey: ', k)
-        #     print('coeffs: ', v)
-        self._SolveSystemNaive()
+                        constraints[projkey] = {
+                            key: coeff
+                        }
+        # Prune out any constraint equations where every entry is 0.
+        self.constraints = dict()
+        for projkey, coeffs_dict in constraints.items():
+            is_nonzero = False
+            for _, coeff in coeffs_dict.items():
+                if np.abs(coeff) > self.kTol:
+                    is_nonzero = True
+                    break
+            if is_nonzero:
+                self.constraints[projkey] = coeffs_dict
+        for k, v in self.constraints.items():
+            print('projkey: ', k)
+            print('coeffs: ', v)
+        self._OptimizeCoeffs()
+    
+    def _OptimizeCoeffs(self):
+        key_to_index = dict()
+        num_keys = 0
+        for key in self.freqs:
+            # Skip the constant term since it's known and won't be changed.
+            if key == (0, 0, 0): continue
+            key_to_index[key] = num_keys
+            num_keys += 1
+
+        # Set up q, p, a, b matrices.
+        # See https://www.cvxpy.org/examples/basic/quadratic_program.html
+        p = np.eye(num_keys)
+        q = np.zeros(num_keys, dtype='complex128')
+        for key, index in key_to_index.items():
+            q[index] = self.basis_coeffs[key]
+        num_constraints = len(self.constraints)
+        a = np.zeros((num_constraints, num_keys), dtype='complex128')
+        b = np.zeros(num_constraints)
+        row = 0
+        for _, coeffs_dict in self.constraints.items():
+            for key, coeff in coeffs_dict.items():
+                index = key_to_index[key]
+                a[row, index] = coeff
+            row += 1
+
+        # Define and solve the CVXPY problem.
+        x = cp.Variable(num_keys, complex=True)
+        obj = cp.Minimize(cp.quad_form(x, p) - 2 * cp.real(q.T @ x))
+        prob = cp.Problem(obj, [a @ x == b])
+        prob.solve(verbose=True)
+        # Print result.
+        print("\nThe optimal value is", prob.value)
+        sol = x.value
+        print("A solution x is", sol)
+
+        # Set new coefficients
+        for key, index in key_to_index.items():
+            self.basis_coeffs[key] = sol[index]
+        print(self.basis_coeffs)
     
     def _SolveSystemNaive(self):
         '''Assembles constraints and original unconstrained coefficients into a
@@ -378,9 +451,12 @@ class TetSymmetry:
                 mat[index, row] = coeff
             row += 1
         rhs = np.zeros(mat_size, dtype='complex128')
+        print(self.basis_coeffs)
         for key, index in key_to_index.items():
             rhs[index] = self.basis_coeffs[key]
         assert _IsSymmetric(mat)
+        _PrintMatrix(mat)
+        _PrintMatrix(rhs)
         new_coeffs = np.linalg.solve(mat, rhs)
         for key, index in key_to_index.items():
             self.basis_coeffs[key] = new_coeffs[index]
