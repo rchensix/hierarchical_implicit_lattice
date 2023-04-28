@@ -5,7 +5,13 @@
 
 # This file computes signed distance voxel grids from triangle meshes.
 
-import igl
+_impl = ''
+try:
+    import igl
+    _impl = 'igl'
+except:
+    import trimesh.proximity
+    _impl = 'trimesh'
 import numpy as np
 
 def ComputeSignedDistance(v: np.ndarray, f: np.ndarray, min_pt: np.ndarray,
@@ -35,5 +41,12 @@ def ComputeSignedDistance(v: np.ndarray, f: np.ndarray, min_pt: np.ndarray,
     query_pts[:, 0] = xgrid.squeeze()
     query_pts[:, 1] = ygrid.squeeze()
     query_pts[:, 2] = zgrid.squeeze()
-    sdf, _, _ = igl.signed_distance(query_pts, v, f)
+    if _impl == 'igl':
+        sdf, _, _ = igl.signed_distance(query_pts, v, f)
+    elif __impl == 'trimesh':
+        mesh = trimesh.Trimesh(v, f)
+        # NOTE: trimesh uses the convention that outside points are negative.
+        sdf = -trimesh.proximity.signed_distance(mesh, query_pts)
+    else:
+        raise RuntimeError('No implementation for computing signed distance')
     return sdf.reshape(xgrid.shape)

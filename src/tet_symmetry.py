@@ -221,7 +221,7 @@ class TetSymmetry:
                               z.reshape(-1, 1)), axis=1)
         # NOTE: scipy.fft assumes input was discretized in the domain [0, 1]^3.
         # However, we assume the input was discretized in the domain
-        # [-0.5, 0.5]^3, so we do a shift here by 0.5 in every direction.
+        # [-0.5, 0.5)^3, so we do a shift here by 0.5 in every direction.
         xyz += 0.5
         for key, subkey_dict in self.freqs.items():
             # Skip terms with nearly zero coefficients.
