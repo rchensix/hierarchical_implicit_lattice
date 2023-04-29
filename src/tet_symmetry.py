@@ -316,11 +316,14 @@ class TetSymmetry:
              [0, 1, 1],
              [0, 0, 0]],
         ], dtype=int)
+        # TODO(rchensix): clean this up.
+        # WARNING: scipy.fft computes coefficients assuming the unit cube is in
+        # [0, 1)^3, so we have to shift the planes that we enforce normality.
         offsets = np.array([
-            [0, 0, 0.5],
-            [0, 0, 0.5],
-            [0, 0, -0.5],
-            [0, 0, -0.5],
+            [0, 0, 1],
+            # [0, 0, 0.5],
+            # [0, 0, -0.5],
+            # [0, 0, -0.5],
         ])
         for i in range(1):
             p_t = proj_mats_transp[i]
