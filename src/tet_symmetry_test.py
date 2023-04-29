@@ -36,7 +36,7 @@ class TestTetSymmetry(unittest.TestCase):
         ts = tet_symmetry.TetSymmetry(data, normal_to_face=True)
         # Evaluate numerical gradient on a tet face.
         face_center = np.mean(tet_symmetry.kUnitTetPts[1:], axis=0)
-        n = np.array([1, 1, 1])
+        normal = np.array([1, 1, 1])
         step = 1e-3
         xvec = np.array([face_center[0], face_center[0] + step])
         yvec = np.array([face_center[1], face_center[1] + step])
@@ -46,7 +46,7 @@ class TestTetSymmetry(unittest.TestCase):
         grad = np.array([vals[1, 0, 0] - vals[0, 0, 0],
                          vals[0, 1, 0] - vals[0, 0, 0],
                          vals[0, 0, 1] - vals[0, 0, 0]]) / step
-        self.assertLess(grad.dot(n), 1e-6)
+        self.assertLess(np.abs(grad.dot(normal)), 1e-6)
 
 if __name__ == '__main__':
     unittest.main()
