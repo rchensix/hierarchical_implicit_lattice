@@ -45,7 +45,7 @@ class TestTetSymmetry(unittest.TestCase):
         vals = ts.EvaluateNaive(xgrid, ygrid, zgrid)
         grad = np.array([vals[1, 0, 0] - vals[0, 0, 0],
                          vals[0, 1, 0] - vals[0, 0, 0],
-                         vals[0, 0, 1] - vals[0, 0, 0]])
+                         vals[0, 0, 1] - vals[0, 0, 0]]) / step
         self.assertLess(grad.dot(n), 1e-6)
 
 if __name__ == '__main__':
