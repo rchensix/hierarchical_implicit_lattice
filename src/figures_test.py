@@ -26,7 +26,7 @@ class TestFigures(unittest.TestCase):
     def test_basic_tet_symmetry(self):
         '''Simple test to ensure TetSymmetry works.
         '''
-        npy_path = 'mesh_outputs/basic_tet_symmetry.npy'
+        npy_path = 'src/mesh_outputs/basic_tet_symmetry.npy'
         if mode == 'fit':
             import tet_symmetry
             n = 4
@@ -52,7 +52,7 @@ class TestFigures(unittest.TestCase):
             voxel_size = 1 / (m - 1)
             min_pt = np.full(3, -0.5)
             v, f = marching_cubes.Triangulate(vals, voxel_size, min_pt, pad=True)
-            out_path = 'mesh_outputs/basic_tet_symmetry.ply'
+            out_path = 'src/mesh_outputs/basic_tet_symmetry.ply'
             mesh_utils.WriteTriangleMesh(v, f, out_path)
 
 if __name__ == '__main__':
