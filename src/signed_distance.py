@@ -38,12 +38,12 @@ def ComputeSignedDistance(v: np.ndarray, f: np.ndarray, min_pt: np.ndarray,
     xgrid, ygrid, zgrid = np.meshgrid(xvec, yvec, zvec, indexing='ij')
     num_pts = np.prod(num_grid_pts)
     query_pts = np.zeros((num_pts, 3))
-    query_pts[:, 0] = xgrid.squeeze()
-    query_pts[:, 1] = ygrid.squeeze()
-    query_pts[:, 2] = zgrid.squeeze()
+    query_pts[:, 0] = xgrid.flatten()
+    query_pts[:, 1] = ygrid.flatten()
+    query_pts[:, 2] = zgrid.flatten()
     if _impl == 'igl':
         sdf, _, _ = igl.signed_distance(query_pts, v, f)
-    elif __impl == 'trimesh':
+    elif _impl == 'trimesh':
         mesh = trimesh.Trimesh(v, f)
         # NOTE: trimesh uses the convention that outside points are negative.
         sdf = -trimesh.proximity.signed_distance(mesh, query_pts)

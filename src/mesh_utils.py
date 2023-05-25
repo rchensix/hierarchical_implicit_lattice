@@ -20,9 +20,7 @@ def ReadTriangleMesh(path: str) -> Tuple[np.ndarray, np.ndarray]:
         f: (M, 3) - triangle array.
     '''
     mesh = meshio.read(path)
-    assert mesh.cells[0][0] == 'triangle', \
-        'ReadTriangleMesh only supports triangles.'
-    return mesh.points, mesh.cells[0][1]
+    return mesh.points, mesh.cells_dict['triangle']
 
 def WriteTriangleMesh(points: np.ndarray, cells: np.ndarray, out_path: str):
     '''Writes triangle mesh to out_path using meshio library.

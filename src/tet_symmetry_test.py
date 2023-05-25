@@ -48,5 +48,19 @@ class TestTetSymmetry(unittest.TestCase):
                          vals[0, 0, 1] - vals[0, 0, 0]]) / step
         self.assertLess(np.abs(grad.dot(normal)), 1e-6)
 
+    def test_eval_ifft(self):
+        '''Feed in grid data that is already tetrahedrally symmetric. Create an
+        approximation for grid data, evaluate using inverse FFT method, and see
+        if it matches the input.
+        '''
+        n = 4
+        v = np.arange(-n // 2, n // 2) / n
+        x, y, z = np.meshgrid(v, v, v, indexing='ij')
+        data = np.cos(2.0 * np.pi * x) + np.cos(2.0 * np.pi * y) + \
+               np.cos(2.0 * np.pi * z)
+        ts = tet_symmetry.TetSymmetry(data)
+        vals = ts.EvaluateUnitCube(4)
+        self.assertLess(np.linalg.norm(data - vals), 1.0e-6)
+
 if __name__ == '__main__':
     unittest.main()

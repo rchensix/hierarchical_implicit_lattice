@@ -8,7 +8,6 @@
 
 from typing import Tuple
 
-import cvxpy as cp
 import numpy as np
 import scipy.fft
 
@@ -231,6 +230,40 @@ class TetSymmetry:
                 vals += self.basis_coeffs[key] * self.normalizing_coeffs[key] \
                         * num_appearances * np.exp(2j * np.pi * xyz.dot(f))
         return vals.reshape(x.shape)
+    
+    def EvaluateUnitCube(self, res: int) -> np.ndarray:
+        '''Evaluate the fitted function on the res x res x res grid spanning
+        the domain [-0.5, 0.5)^3. For example, the result at index [0, 0, 0]
+        comes from evaluating the spatial coordinate x = y = z = -0.5, and the
+        result at index [-1, -1, -1] comes from evaluating the spatial
+        coordinate x = y = z = -0.5 + (res - 1) / n.
+
+        Args:
+            res: int - grid resolution to evaluate at.
+        Returns:
+            vals: (res, res, res) - evaluated complex values.
+        '''
+        res_actual = res
+        if res < self.n:
+            res_actual = int(np.ceil(self.n / res)) * res
+        # Create fft grid of size res_actual^3.
+        fft = np.zeros((res_actual, res_actual, res_actual),
+                       dtype='complex128')
+        # Fill fft grid with coefficient values.
+        # TODO(rchensix): Cache this fft grid since it only needs to be shifted
+        # for different res_actual values.
+        for key, subkey_dict in self.freqs.items():
+            # Skip terms with nearly zero coefficients.
+            if np.abs(self.basis_coeffs[key]) < self.kTol: continue
+            for subkey, num_appearances in subkey_dict.items():
+                fx, fy, fz = subkey
+                idx0 = fx if fx >= 0 else fx + res_actual
+                idx1 = fy if fy >= 0 else fy + res_actual
+                idx2 = fz if fz >= 0 else fz + res_actual
+                fft[idx0, idx1, idx2] = self.basis_coeffs[key] * \
+                                        self.normalizing_coeffs[key] * \
+                                        num_appearances
+        return scipy.fft.ifftn(fft, norm='forward')
 
     def _ComputeCoeffs(self):
         '''Computes coefficients of tetrahedral symmetry.
@@ -367,6 +400,10 @@ class TetSymmetry:
         self._OptimizeCoeffs()
     
     def _OptimizeCoeffs(self):
+        # Put the cvxpy import here since this is the only method that needs it.
+        # This makes it easier to run other methods in TetSymmetry since cvxpy
+        # does not get along with many geometry packages on my computer.
+        import cvxpy as cp
         key_to_index = dict()
         num_keys = 0
         for key in self.freqs:

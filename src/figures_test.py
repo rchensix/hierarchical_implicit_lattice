@@ -7,56 +7,55 @@
 # the manuscript, as well as some miscellaneous meshes for testing.
 
 # WARNING: I cannot get cvxpy to play nicely with my other dependencies in my
-# Anaconda environment, so to run this test, you'll have to do something silly:
-# 1. Activate the environment with cvxpy.
-# 2. Run using the command "python figures_test.py --mode=fit". This will run
-#    the tetrahedral symmetry fitting portions of the test and dump out the
-#    voxel grids as .npy files in the mesh_outputs folder.
-# 3. Re-run using the command "python figures_test.py --mode=tri". This will
-#    run the triangulation portions of the test and dump out the PLY files in
-#    mesh_outputs folder.
+# Anaconda environment, so any tests that depend on cvxpy (only the ones that
+# initialize TetSymmetry with normal_to_face=True) have been moved to a
+# different test file.
 
-# TODO(rchen): enable
-# import argparse
 import unittest
 
 import numpy as np
 
+import marching_cubes
+import mesh_utils
+import signed_distance
+import tet_symmetry
+
 class TestFigures(unittest.TestCase):
-    def test_basic_tet_symmetry(self):
-        '''Simple test to ensure TetSymmetry works.
+    def test_discretization_level(self):
+        '''Test different values of N to see effect on discretization. Also
+        test difference between using binary and signed distance field inputs.
         '''
-        npy_path = 'src/mesh_outputs/basic_tet_symmetry.npy'
-        if mode == 'fit':
-            import tet_symmetry
-            n = 4
-            v = np.arange(-n // 2, n // 2) / n
-            x, y, z = np.meshgrid(v, v, v, indexing='ij')
-            data = -np.cos(2.0 * np.pi * x) - np.cos(2.0 * np.pi * y) - \
-                   np.cos(2.0 * np.pi * z)
-            ts = tet_symmetry.TetSymmetry(data, normal_to_face=True)
-            # Evaluate in the unit cube and use more points so the resulting
-            # mesh looks better.
-            m = 100
-            v = np.linspace(-0.5, 0.5, m)
-            xgrid, ygrid, zgrid = np.meshgrid(v, v, v, indexing='ij')
-            vals = ts.EvaluateNaive(xgrid, ygrid, zgrid)
-            self.assertEqual(vals.shape, xgrid.shape)
-            np.save(npy_path, vals)
-        elif mode == 'tri':
-            import marching_cubes
-            import mesh_utils
-            import signed_distance
-            vals = np.load(npy_path)
-            m = vals.shape[0]
-            voxel_size = 1 / (m - 1)
-            min_pt = np.full(3, -0.5)
-            v, f = marching_cubes.Triangulate(vals, voxel_size, min_pt, pad=True)
-            out_path = 'src/mesh_outputs/basic_tet_symmetry.ply'
-            mesh_utils.WriteTriangleMesh(v, f, out_path)
+        v, f = mesh_utils.ReadTriangleMesh('src/mesh_inputs/cross_unit_cell.stl')
+        min_pt = np.full(3, -0.5)
+        n_vals = [8, 16, 32]
+        modes = ['binary', 'sdf']
+        for n in n_vals:
+            max_pt = min_pt + (n - 1) / n
+            sdf = signed_distance.ComputeSignedDistance(v, f, min_pt, max_pt,
+                                                        np.full(3, n))
+            for mode in modes:
+                print('Processing N={} mode={}'.format(n, mode))
+                if mode == 'binary':
+                    data = np.copy(sdf)
+                    data[data > 0.0] = 1.0
+                    data[data <= 0.0] = -1.0
+                else:
+                    data = sdf
+                ts = tet_symmetry.TetSymmetry(data)
+                # Evaluate in the unit cube and use more points so the mesh
+                # looks better.
+                m = 128
+                # Need to add extra layer to make grid periodic for marching cubes.
+                vals = np.zeros((m + 1, m + 1, m + 1))
+                vals[:-1, :-1, :-1] = np.real(ts.EvaluateUnitCube(m))
+                vals[-1, :, :] = vals[0, :, :]
+                vals[:, -1, :] = vals[:, 0, :]
+                vals[:, :, -1] = vals[:, :, 0]
+                voxel_size = 1 / m
+                vout, fout = marching_cubes.Triangulate(vals, voxel_size, min_pt,
+                                                    pad=True)
+                out_path = 'src/mesh_outputs/cross_n{}_{}.ply'.format(n, mode)
+                mesh_utils.WriteTriangleMesh(vout, fout, out_path)
 
 if __name__ == '__main__':
-    # TODO(rchen): use argparse
-    # mode = 'fit'
-    mode = 'tri'
     unittest.main()
