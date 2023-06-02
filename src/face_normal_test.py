@@ -19,7 +19,7 @@ class TestFaceNorma(unittest.TestCase):
     def test_basic_tet_symmetry(self):
         '''Simple test to ensure TetSymmetry with face normality works.
         '''
-        npy_path = 'src/mesh_outputs/basic_tet_symmetry.npy'
+        npy_path = '/tmp/basic_tet_symmetry.npy'
         import tet_symmetry
         n = 4
         v = np.arange(-n // 2, n // 2) / n

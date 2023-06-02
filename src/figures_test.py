@@ -54,7 +54,7 @@ class TestFigures(unittest.TestCase):
                 voxel_size = 1 / m
                 vout, fout = marching_cubes.Triangulate(vals, voxel_size, min_pt,
                                                     pad=True)
-                out_path = 'src/mesh_outputs/cross_n{}_{}.ply'.format(n, mode)
+                out_path = '/tmp/cross_n{}_{}.ply'.format(n, mode)
                 mesh_utils.WriteTriangleMesh(vout, fout, out_path)
 
 if __name__ == '__main__':

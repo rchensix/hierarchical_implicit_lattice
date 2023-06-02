@@ -22,7 +22,7 @@ class TestMarchingCubes(unittest.TestCase):
         voxel_size = (domain[-1] - domain[0]) / (n - 1)
         min_pt = np.full(3, domain[0])
         v, f = marching_cubes.Triangulate(grid, voxel_size, min_pt)
-        mesh_utils.WriteTriangleMesh(v, f, 'mesh_outputs/sphere.ply')
+        mesh_utils.WriteTriangleMesh(v, f, '/tmp/sphere.ply')
     
     def test_padding(self):
         '''Test gyroid with large value padding to close side walls and make
@@ -39,7 +39,7 @@ class TestMarchingCubes(unittest.TestCase):
         voxel_size = (domain[-1] - domain[0]) / (n - 1)
         min_pt = np.full(3, domain[0])
         v, f = marching_cubes.Triangulate(grid, voxel_size, min_pt, pad=True)
-        mesh_utils.WriteTriangleMesh(v, f, 'mesh_outputs/gyroid_padded.ply')
+        mesh_utils.WriteTriangleMesh(v, f, '/tmp/gyroid_padded.ply')
 
 if __name__ == '__main__':
     unittest.main()
