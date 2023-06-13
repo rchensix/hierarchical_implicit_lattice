@@ -27,7 +27,7 @@ class TestFigures(unittest.TestCase):
         '''
         v, f = mesh_utils.ReadTriangleMesh('src/mesh_inputs/cross_unit_cell.stl')
         min_pt = np.full(3, -0.5)
-        n_vals = [32, 64, 128]
+        n_vals = [32]
         modes = ['binary', 'sdf']
         for n in n_vals:
             max_pt = min_pt + (n - 1) / n

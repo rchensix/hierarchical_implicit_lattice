@@ -243,6 +243,9 @@ class TetSymmetry:
         Returns:
             vals: (res, res, res) - evaluated complex values.
         '''
+        # TODO(rchen): something is going wrong with using irfftn.
+        # In the meantime, force this to use ifftn instead.
+        self.is_real = False
         res_actual = res
         if res < self.n:
             res_actual = int(np.ceil(self.n / res)) * res
