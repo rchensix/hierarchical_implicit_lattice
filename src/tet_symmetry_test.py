@@ -61,6 +61,25 @@ class TestTetSymmetry(unittest.TestCase):
         ts = tet_symmetry.TetSymmetry(data)
         vals = ts.EvaluateUnitCube(4)
         self.assertLess(np.linalg.norm(data - vals), 1.0e-6)
+    
+    def test_eval_small_res(self):
+        '''Feed in grid data at a resolution of N, and evaluate at a resolution
+        of res < N.
+        '''
+        n = 16
+        v = np.arange(-n // 2, n // 2) / n
+        x, y, z = np.meshgrid(v, v, v, indexing='ij')
+        data = np.cos(2.0 * np.pi * x) + np.cos(2.0 * np.pi * y) + \
+               np.cos(2.0 * np.pi * z)
+        ts = tet_symmetry.TetSymmetry(data)
+        res = 13
+        vals = ts.EvaluateUnitCube(res)
+        # Compute true values.
+        vres = np.linspace(-0.5, -0.5 + (res - 1) / res, res)
+        xres, yres, zres = np.meshgrid(vres, vres, vres, indexing='ij')
+        data_res = np.cos(2.0 * np.pi * xres) + np.cos(2.0 * np.pi * yres) + \
+                   np.cos(2.0 * np.pi * zres)
+        self.assertLess(np.linalg.norm(data_res - vals), 1.0e-6)
 
 if __name__ == '__main__':
     unittest.main()

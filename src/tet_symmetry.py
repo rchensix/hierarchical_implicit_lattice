@@ -246,9 +246,14 @@ class TetSymmetry:
         res_actual = res
         if res < self.n:
             res_actual = int(np.ceil(self.n / res)) * res
-        # Create fft grid of size res_actual^3.
-        fft = np.zeros((res_actual, res_actual, res_actual),
-                       dtype='complex128')
+        # Create fft grid of size res_actual^3 if complex or if real, set last
+        # axis to length res_actual // 2 + 1.
+        if self.is_real:
+            fft = np.zeros((res_actual, res_actual, res_actual // 2 + 1),
+                           dtype='complex128')
+        else:
+            fft = np.zeros((res_actual, res_actual, res_actual),
+                           dtype='complex128')
         # Fill fft grid with coefficient values.
         # TODO(rchensix): Cache this fft grid since it only needs to be shifted
         # for different res_actual values.
@@ -257,13 +262,22 @@ class TetSymmetry:
             if np.abs(self.basis_coeffs[key]) < self.kTol: continue
             for subkey, num_appearances in subkey_dict.items():
                 fx, fy, fz = subkey
+                if self.is_real and fz < 0: continue
                 idx0 = fx if fx >= 0 else fx + res_actual
                 idx1 = fy if fy >= 0 else fy + res_actual
                 idx2 = fz if fz >= 0 else fz + res_actual
                 fft[idx0, idx1, idx2] = self.basis_coeffs[key] * \
                                         self.normalizing_coeffs[key] * \
                                         num_appearances
-        return scipy.fft.ifftn(fft, norm='forward')
+        if self.is_real:
+            result = scipy.fft.irfftn(fft, norm='forward')
+        else:
+            result = scipy.fft.ifftn(fft, norm='forward')
+        if res < self.n:
+            skip = res_actual // res
+            return result[::skip, ::skip, ::skip]
+        else:
+            return result
 
     def _ComputeCoeffs(self):
         '''Computes coefficients of tetrahedral symmetry.
@@ -271,9 +285,11 @@ class TetSymmetry:
         # Compute FFT of input data.
         # NOTE: The norm='forward' part is necessary to get the 1/N scaling.
         # See https://www.johndcook.com/blog/2021/03/20/fourier-series-fft/
-        # NOTE: In practice, all signed distance inputs should be real valued,
-        # so scipy.fft.rfftn would be more space saving.
-        self.fftn = scipy.fft.fftn(self.data, norm='forward')
+        self.is_real = np.all(np.isreal(self.data))
+        if self.is_real:
+            self.rfftn = scipy.fft.rfftn(self.data, norm='forward')
+        else:
+            self.fftn = scipy.fft.fftn(self.data, norm='forward')
         # Max frequency to compute is Nyquist frequency.
         self.max_f = self.n // 2 if self.n % 2 == 1 else self.n // 2 - 1
         # Compute unique (fx, fy, fz) frequency triplets as well as their
@@ -319,10 +335,20 @@ class TetSymmetry:
             coeff: float - complex-valued coefficient.
         '''
         fx, fy, fz = f
-        idx0 = fx if fx >= 0 else fx + self.n
-        idx1 = fy if fy >= 0 else fy + self.n
-        idx2 = fz if fz >= 0 else fz + self.n
-        return self.fftn[idx0, idx1, idx2]
+        if self.is_real:
+            idx0 = fx if fx >= 0 else fx + self.n
+            idx1 = fy if fy >= 0 else fy + self.n
+            idx2 = np.abs(fz)
+            coeff = self.rfftn[idx0, idx1, idx2]
+            if fz < 0:
+                return np.conj(coeff)
+            else:
+                return coeff
+        else:
+            idx0 = fx if fx >= 0 else fx + self.n
+            idx1 = fy if fy >= 0 else fy + self.n
+            idx2 = fz if fz >= 0 else fz + self.n
+            return self.fftn[idx0, idx1, idx2]
     
     def _ComputeCoeffsNormalToFace(self):
         # Get affine transform that projects points onto all four tetrahedron

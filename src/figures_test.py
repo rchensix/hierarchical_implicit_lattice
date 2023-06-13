@@ -27,7 +27,7 @@ class TestFigures(unittest.TestCase):
         '''
         v, f = mesh_utils.ReadTriangleMesh('src/mesh_inputs/cross_unit_cell.stl')
         min_pt = np.full(3, -0.5)
-        n_vals = [8, 16, 32]
+        n_vals = [32, 64, 128]
         modes = ['binary', 'sdf']
         for n in n_vals:
             max_pt = min_pt + (n - 1) / n
@@ -44,7 +44,7 @@ class TestFigures(unittest.TestCase):
                 ts = tet_symmetry.TetSymmetry(data)
                 # Evaluate in the unit cube and use more points so the mesh
                 # looks better.
-                m = 128
+                m = 256
                 # Need to add extra layer to make grid periodic for marching cubes.
                 vals = np.zeros((m + 1, m + 1, m + 1))
                 vals[:-1, :-1, :-1] = np.real(ts.EvaluateUnitCube(m))
