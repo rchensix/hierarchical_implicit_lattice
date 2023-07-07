@@ -243,9 +243,6 @@ class TetSymmetry:
         Returns:
             vals: (res, res, res) - evaluated complex values.
         '''
-        # TODO(rchen): something is going wrong with using irfftn.
-        # In the meantime, force this to use ifftn instead.
-        self.is_real = False
         res_actual = res
         if res < self.n:
             res_actual = int(np.ceil(self.n / res)) * res
@@ -257,6 +254,7 @@ class TetSymmetry:
         else:
             fft = np.zeros((res_actual, res_actual, res_actual),
                            dtype='complex128')
+
         # Fill fft grid with coefficient values.
         # TODO(rchensix): Cache this fft grid since it only needs to be shifted
         # for different res_actual values.
@@ -265,15 +263,30 @@ class TetSymmetry:
             if np.abs(self.basis_coeffs[key]) < self.kTol: continue
             for subkey, num_appearances in subkey_dict.items():
                 fx, fy, fz = subkey
-                if self.is_real and fz < 0: continue
-                idx0 = fx if fx >= 0 else fx + res_actual
-                idx1 = fy if fy >= 0 else fy + res_actual
-                idx2 = fz if fz >= 0 else fz + res_actual
-                fft[idx0, idx1, idx2] = self.basis_coeffs[key] * \
-                                        self.normalizing_coeffs[key] * \
-                                        num_appearances
+                if self.is_real:
+                    take_conj = fz < 0
+                    if take_conj:
+                        fx = -fx
+                        fy = -fy
+                        fz = -fz
+                    idx0 = fx if fx >= 0 else fx + res_actual
+                    idx1 = fy if fy >= 0 else fy + res_actual
+                    idx2 = fz  # Should always be non-negative
+                    coeff = self.basis_coeffs[key] * \
+                            self.normalizing_coeffs[key] * \
+                            num_appearances
+                    if take_conj: coeff = np.conj(coeff)
+                    fft[idx0, idx1, idx2] = coeff
+                else:
+                    idx0 = fx if fx >= 0 else fx + res_actual
+                    idx1 = fy if fy >= 0 else fy + res_actual
+                    idx2 = fz if fz >= 0 else fz + res_actual
+                    fft[idx0, idx1, idx2] = self.basis_coeffs[key] * \
+                                            self.normalizing_coeffs[key] * \
+                                            num_appearances
         if self.is_real:
-            result = scipy.fft.irfftn(fft, norm='forward')
+            result = scipy.fft.irfftn(fft, s=np.full(3, res_actual),
+                                      norm='forward')
         else:
             result = scipy.fft.ifftn(fft, norm='forward')
         if res < self.n:
@@ -298,9 +311,9 @@ class TetSymmetry:
         # Compute unique (fx, fy, fz) frequency triplets as well as their
         # transformations by the point symmetry group.
         self.freqs = dict()
-        for fx in range(self.max_f + 1):
-            for fy in range(self.max_f + 1):
-                for fz in range(self.max_f + 1):
+        for fx in range(-self.max_f, self.max_f + 1):
+            for fy in range(-self.max_f, self.max_f + 1):
+                for fz in range(-self.max_f, self.max_f + 1):
                     if not _IsInsideIntegerLatticePlanes(fx, fy, fz): continue
                     key = (fx, fy, fz)
                     assert key not in self.freqs
@@ -339,14 +352,18 @@ class TetSymmetry:
         '''
         fx, fy, fz = f
         if self.is_real:
+            take_conj = fz < 0
+            # If fz is negative, get the conjugate of (-fx, -fy, -fz) instead
+            if take_conj:
+                fx = -fx
+                fy = -fy
+                fz = -fz
             idx0 = fx if fx >= 0 else fx + self.n
             idx1 = fy if fy >= 0 else fy + self.n
-            idx2 = np.abs(fz)
+            idx2 = fz  # Should always be non-negative
             coeff = self.rfftn[idx0, idx1, idx2]
-            if fz < 0:
-                return np.conj(coeff)
-            else:
-                return coeff
+            if take_conj: coeff = np.conj(coeff)
+            return coeff
         else:
             idx0 = fx if fx >= 0 else fx + self.n
             idx1 = fy if fy >= 0 else fy + self.n
