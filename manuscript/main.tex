@@ -68,7 +68,7 @@
 %%
 %% The "title" command has an optional parameter,
 %% allowing the author to define a "short title" to be used in page headers.
-\title{Hierarchical Lattice Structures with Tetrahedral Symmetry}
+\title{Symmetric Implicit Surface Microstructures for Hierarchical Design}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -115,7 +115,7 @@
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-  TODO
+  We present a framework for generating hierarchical structures using a palette of symmetric implicit surface microstructures. The framework utilizes an unstructured mesh composed of either triangles, quadrilaterals, tetrahedrons, or hexahedrons to serve as a scaffold for microstructural unit cells to tile, where each unit cell is represented by an implicit surface and defined using a set of symmetric basis functions derived from Fourier series. Any arbitrary input geometry may be converted into a symmetric implicit surface using an Fast-Fourier-Transform-based method as long as inside/outside queries can be performed on the input geometry. Using our framework, we demonstrate blending together different unit cells to create new ones as well as spatial transitions between different unit cells. In addition, we present a method to constrain unit cells to intersect its bounding polygon/polyhedron at a right angle, which we postulate is necessary for $C^1$ continuity. Finally, we briefly mention some mechanical applications that may benefit from our framework.
 \end{abstract}
 
 %%
@@ -149,7 +149,7 @@
 %%
 %% Keywords. The author(s) should pick words that accurately describe
 %% the work being presented. Separate the keywords with commas.
-\keywords{lattice structure, implicit surface, microstructure}
+\keywords{hierarchical structure, implicit surface, lattice, microstructure, symmetry}
 
 \received{DD MONTH YYYY}
 \received[revised]{DD MONTH YYYY}
@@ -168,14 +168,14 @@
 
 \section{Methodology}
 
-\subsection{Implicit Surfaces with Tetrahedral Symmetry}
-\label{sec:implicit_surface_tetrahedral_symmetry}
+\subsection{Symmetric Implicit Surfaces}
+\label{sec:symmetric_implicit_surfaces}
 
-Tetrahedral symmetry, in the context of this work, refers to full or achiral tetrahedral symmetry, denoted as $T_d$. In other words, it is the symmetry group of a regular tetrahedron with uncolored faces. The symmetry group $T_d$ consists of 24 symmetry operators. Each symmetry operator may be expressed as a $3\times3$ orthogonal matrix $\mathbf{Q}$ that represents a transformation of a point $\mathbf{x}$ about the origin. A geometric object possesses tetrahedral symmetry if applying any symmetry operator $\mathbf{Q} \in T_d$ to any arbitrary point on or inside the object results in a transformed point that remains on or inside the original object. A list of all 24 symmetry operators in $T_d$ is given in Appendix \ref{sec:tetrahedral_symmetry}.
+Implicit surfaces represent a geometric object through an equation of the form $\Phi(\mathbf{x}) = 0$ where $\Phi: \mathbb{R}^d \rightarrow \mathbb{R}$ is some function that evaluates a query point $\mathbf{x}$ and returns zero if $\mathbf{x}$ is on the surface, returns a negative value if $\mathbf{x}$ is inside the surface, or returns a positive value if $\mathbf{x}$ is outside the surface (note that this convention is not universal and other authors may use the opposite convention, i.e. points inside the surface have positive return values). The magnitude of the return value may have some geometric meaning, but this is not required. For example, signed distance functions are a subset of implicit surface equations where the magnitude of the return value denotes the distance from the query point $\mathbf{x}$ to the surface.
 
-Implicit surfaces represent a geometric object through an equation of the form $\Phi(\mathbf{x}) = 0$ where $\Phi: \mathbb{R}^3 \rightarrow \mathbb{R}$ is some function that takes in a 3D query point $\mathbf{x}$ and returns zero if $\mathbf{x}$ is on the surface, returns a negative value if $\mathbf{x}$ is inside the surface, or returns a positive value if $\mathbf{x}$ is outside the surface (note that this convention is not universal and other authors may use the opposite convention, i.e. points inside the surface have positive return values). The magnitude of the return value may have some geometric meaning, but this is not required. For example, signed distance functions are a subset of implicit surface equations where the magnitude of the return value denotes the distance from the query point $\mathbf{x}$ to the surface.
+A symmetric implicit surface is an implicit surface equation that has been constrained such that the geometry that it represents is unchanged after applying any transformation from a chosen symmetry group. In other words, $\Phi(\mathbf{x}) = \Phi(\mathbf{Q} \mathbf{x})$, where $\mathbf{Q}$ is a $d \times d$ orthogonal matrix in the symmetry group that represents a linear transformation of a point $\mathbf{x}$ about the origin. Note that for this work, we are restricting ourselves to linear transformations and excluding affine transformations. We want to constrain the implicit surface to match the symmetry group of the cell type in the unstructured scaffold mesh to tile: dihedral group of degree 3 and order 6 ($D_3$) for triangle meshes, dihedral group of degree 4 and order 8 ($D_4$) for quad meshes, achiral tetrahedral symmetry ($T_d$) for tetrahedron meshes, and achiral octahedral symmetry ($O_h$) for hexahedron meshes. The list of symmetry operators for these four symmetry groups is given in Appendix \ref{sec:symmetry_groups}.
 
-To construct an implicit surface $\Phi(\mathbf{x})$ with tetrahedral symmetry, 3D basis functions that inherently possess tetrahedral symmetry are used. A 3D basis function with tetrahedral symmetry $\phi(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$ may be constructed from some other conventional 3D basis function $\psi(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$ by iterating over the symmetry operators $\mathbf{Q} \in T_d$, feeding the transformation $\mathbf{Qx}$ as input to $\psi$, and summing over all 24 possible values of $\mathbf{Q}$:
+To construct a symmetric implicit surface $\Phi(\mathbf{x})$, we first construct a basis function that is inherently symmetric. A 3D basis function with tetrahedral symmetry $\phi(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$ may be constructed from some other conventional 3D basis function $\psi(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$ by iterating over the symmetry operators $\mathbf{Q} \in T_d$, feeding the transformation $\mathbf{Qx}$ as input to $\psi$, and summing over all 24 possible values of $\mathbf{Q}$:
 %
 \begin{equation}
   \label{eq:basis_function}
@@ -300,14 +300,40 @@ TODO
 
 \appendix
 
-\section{Point Groups}
+\section{Symmetry Groups}
+\label{sec:symmetry_groups}
+All symmetry operators here are written in crystallographic notation, composed of a $d$-tuple representing the result of applying a linear transformation to a point $\mathbf{x} \in \mathbb{R}^d$. An overbar denotes negation. For example, $x, \overline{z}, y$ represents the linear transformation
+\begin{equation}
+  \begin{bmatrix}
+    1 & 0 & 0 \\
+    0 & 0 & -1 \\
+    0 & 1 & 0 \\
+  \end{bmatrix}
+  \begin{bmatrix}
+    x \\
+    y \\
+    z \\
+  \end{bmatrix}
+  =
+  \begin{bmatrix}
+    x \\
+    -z \\
+    y \\
+  \end{bmatrix}
+\end{equation}
 
-\subsection{Tetrahedral Symmetry}
-\label{sec:tetrahedral_symmetry}
 
-\subsection{Octahedral Symmetry}
+\subsection{Dihedral Group of Degree 3 and Order 6}
+The dihedral group of degree 3 and order 6 ($D_3$) is the symmetry group of an equilateral triangle.
 
-\subsection{Isocahedral Symmetry}
+\subsection{Dihedral Group of Degree 4 and Order 8}
+The dihedral group of degree 4 and order 8 ($D_4$) is the symmetry group of a square.
+
+\subsection{Achiral Tetrahedral Symmetry}
+Achiral tetrahedral symmetry ($T_d$) is the symmetry group of a regular tetrahedron.
+
+\subsection{Achiral Octahedral Symmetry}
+Achiral tetrahedral symmetry ($O_h$) is the symmetry group of a cube (as well as that of a regular octahedron, hence the name).
 
 \end{document}
 \endinput
