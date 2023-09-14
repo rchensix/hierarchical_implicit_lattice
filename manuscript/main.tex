@@ -80,7 +80,7 @@
 \email{rchensix@alumni.stanford.edu}
 \orcid{0002-5273-6277}
 \author{Hardik Kabaria}
-\email{hardik@carbon3d.com}
+\email{hardikk@alumni.stanford.edu}
 \author{Saigopal Nelaturi}
 \email{snelaturi@carbon3d.com}
 \affiliation{
@@ -163,6 +163,7 @@
 \section{Introduction}
 
 \subsection{Contributions}
+To the best of our knowledge, this work is the first to present a framework for generating hierarchical structures using \textit{unstructured} scaffold meshes composed solely of one element type: triangles, quadrilaterals, tetrahedrons, and hexahedrons. Furthermore, this work is the first to present a method of transitioning between arbitrarily chosen unit cells within the unstructured scaffold mesh. By supporting the most common unstructured mesh types, we ensure that our framework is compatible with a wide range of off-the-shelf mesh generators and can be used to generate hierarchical structures of complex design domains that are practically unsuitable for structured meshing.
 
 \section{Related Works}
 
@@ -171,51 +172,60 @@
 \subsection{Symmetric Implicit Surfaces}
 \label{sec:symmetric_implicit_surfaces}
 
-Implicit surfaces represent a geometric object through an equation of the form $\Phi(\mathbf{x}) = 0$ where $\Phi: \mathbb{R}^d \rightarrow \mathbb{R}$ is some function that evaluates a query point $\mathbf{x}$ and returns zero if $\mathbf{x}$ is on the surface, returns a negative value if $\mathbf{x}$ is inside the surface, or returns a positive value if $\mathbf{x}$ is outside the surface (note that this convention is not universal and other authors may use the opposite convention, i.e. points inside the surface have positive return values). The magnitude of the return value may have some geometric meaning, but this is not required. For example, signed distance functions are a subset of implicit surface equations where the magnitude of the return value denotes the distance from the query point $\mathbf{x}$ to the surface.
+Implicit surfaces represent a geometric object through an equation of the form $\Phi(\mathbf{x}) = 0$ where $\Phi: \mathbb{R}^d \rightarrow \mathbb{R}$ is some function that evaluates a query point $\mathbf{x}$ and returns zero if $\mathbf{x}$ is on the surface, returns a negative value if $\mathbf{x}$ is inside the surface, or returns a positive value if $\mathbf{x}$ is outside the surface (note that this convention is not universal and other authors may use the opposite convention, i.e. points inside the surface have positive return values). The magnitude of the return value of the implicit surface function may have some geometric meaning, but this is not required. For example, signed distance functions are a subset of implicit surface equations where the magnitude of the return value denotes the distance from the query point $\mathbf{x}$ to the surface. In this work, we are interested in implicit surface functions that represent 2D and 3D geometries, so we assume that $d = 2$ or $d = 3$.
 
-A symmetric implicit surface is an implicit surface equation that has been constrained such that the geometry that it represents is unchanged after applying any transformation from a chosen symmetry group. In other words, $\Phi(\mathbf{x}) = \Phi(\mathbf{Q} \mathbf{x})$, where $\mathbf{Q}$ is a $d \times d$ orthogonal matrix in the symmetry group that represents a linear transformation of a point $\mathbf{x}$ about the origin. Note that for this work, we are restricting ourselves to linear transformations and excluding affine transformations. We want to constrain the implicit surface to match the symmetry group of the cell type in the unstructured scaffold mesh to tile: dihedral group of degree 3 and order 6 ($D_3$) for triangle meshes, dihedral group of degree 4 and order 8 ($D_4$) for quad meshes, achiral tetrahedral symmetry ($T_d$) for tetrahedron meshes, and achiral octahedral symmetry ($O_h$) for hexahedron meshes. The list of symmetry operators for these four symmetry groups is given in Appendix \ref{sec:symmetry_groups}.
+A symmetric implicit surface is defined in this work to be an implicit surface equation that has been constrained such that the geometry that it represents is unchanged after applying any transformation from a chosen symmetry group $\mathcal{S}$. In other words, $\Phi(\mathbf{x}) = \Phi(\mathbf{Q} \mathbf{x})$, where $\mathbf{Q}: \mathbb{R}^{d \times d} \in \mathcal{S}$ is an orthogonal matrix that represents a linear transformation of a point $\mathbf{x}$ about the origin. Note that for this work, we are restricting ourselves to linear transformations and excluding affine transformations. We want to constrain the implicit surface to match the symmetry group of the cell type in the unstructured scaffold mesh to tile: dihedral group of degree 3 and order 6 ($D_3$) for triangle meshes, dihedral group of degree 4 and order 8 ($D_4$) for quad meshes, achiral tetrahedral symmetry ($T_d$) for tetrahedron meshes, and achiral octahedral symmetry ($O_h$) for hexahedron meshes. The list of symmetry operators for these four symmetry groups is given in Appendix \ref{sec:symmetry_groups}. The necessity of symmetric implicit surfaces to tile the unstructured scaffold mesh is explained in detail in Section \ref{sec:tiling_mesh_scaffolds}, but in brief, it is the symmetry that ensures $C^0$ continuity at the boundaries of the hierarchical structure. Furthermore, symmetry is crucial for enabling the spatial transitions described in Section \ref{sec:spatial_transitions}.
 
-To construct a symmetric implicit surface $\Phi(\mathbf{x})$, we first construct a basis function that is inherently symmetric. A 3D basis function with tetrahedral symmetry $\phi(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$ may be constructed from some other conventional 3D basis function $\psi(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$ by iterating over the symmetry operators $\mathbf{Q} \in T_d$, feeding the transformation $\mathbf{Qx}$ as input to $\psi$, and summing over all 24 possible values of $\mathbf{Q}$:
+To construct a symmetric implicit surface $\Phi(\mathbf{x})$, we first construct a basis function that is inherently symmetric. The symmetric basis function is constructed from some other conventional basis function $\psi(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{R}$ by iterating over the symmetry operators $\mathbf{Q} \in \mathcal{S}$, feeding the transformed point $\mathbf{Qx}$ as input to $\psi$, and summing over all values of $\mathbf{Q}$:
 %
 \begin{equation}
   \label{eq:basis_function}
-  \phi(\mathbf{x}) = K \sum\limits_{\mathbf{Q} \in T_d} \psi(\mathbf{Qx})
+  \phi(\mathbf{x}) = K \sum\limits_{\mathbf{Q} \in \mathcal{S}} \psi(\mathbf{Qx})
 \end{equation}
 %
-where $K$ is some normalization factor to make the basis function orthonormal. In this work, the 3D Fourier series
+where $K$ is some normalization factor to make the basis function orthonormal. In this work, the $d$-dimensional Fourier series
 %
 \begin{equation}
   \label{eq:fourier_series}
   \psi_{\mathbf{f}}(\mathbf{x}) = e^{2\pi i \mathbf{f}^T \mathbf{x}}
 \end{equation}
 %
-is used, where $\mathbf{f} \in \mathcal{T}$ is an integer-valued vector that represents spatial frequencies in the Cartesian directions. The set of all possible parameters is given by $\mathcal{T}$:
+is used, where $\mathbf{f}: \mathbb{R}^d \in \mathcal{T}$ is an integer-valued vector that represents spatial frequencies in the Cartesian directions, and $\mathcal{T} \subset \mathbb{Z}^d$ is a subset of the $d$-dimensional integer lattice that is specific to the chosen scaffold mesh type. In other words, $\mathcal{T}$ contains all of the \textit{unique} spatial frequencies that may be used to construct a symmetric basis functions. Any spatial frequencies not in $\mathcal{T}$ do not need to be considered due to symmetry. For example, suppose the scaffold mesh is a quad mesh, then one representation for $\mathcal{T}$ is given by
 %
 \begin{equation}
-  \mathcal{T} = \left\{ \begin{bmatrix} f_x \\ f_y \\ f_z \end{bmatrix} \in \mathbb{Z}^3 | f_y + f_z \geq 0 \: \text{and} f_y - f_z \geq 0 \: \text{and} f_x - f_y \geq 0 \right\}
+  \mathcal{T} = \left\{ \begin{bmatrix} f_x \\ f_y \end{bmatrix} \in \mathbb{Z}^2 | f_y \geq 0 \: \text{and} \: f_x - f_y \geq 0 \right\}
 \end{equation}
 %
-Note that the set $\mathcal{T}$ is a subset of $\mathbb{Z}^3$ to avoid duplicate basis functions, i.e. if $\mathcal{T}$ was all of $\mathbb{Z}^3$, then there will be multiple values of $\mathbf{f}$ that result in the same basis function $\phi_{\mathbf{f}}(\mathbf{x})$. Additionally, note that by writing the 3D Fourier series using complex exponentials (as expressed in Equation \ref{eq:fourier_series}), Equation \ref{eq:basis_function} is, in general, a function that takes in real-valued 3D points and returns complex valued scalars, i.e. $\phi_{\mathbf{f}}(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{C}$. However, for the purpose of generating implicit surfaces, only the real or imaginary part (but not both) of the final expression for $\Phi(\mathbf{x})$ will be used.
+This representation of $\mathcal{T}$ for a quad mesh is depicted in Figure \ref{fig:unique_freqs_quad}(a).
+%
+\begin{figure}
+  \centering
+  \includegraphics[width=0.45\textwidth]{figures/quad_z_lattice_points.pdf}
+  \caption{A subset $\mathcal{T}$ of the $\mathbb{Z}^2$ lattice defines unique spatial frequencies that can be used to generate unit cells with $D_4$ symmetry. Both (a) and (b) are valid representations for $\mathcal{T}$, and it is a matter of user preference to choose.}
+  \label{fig:unique_freqs_quad}
+\end{figure}
+%
+Note that if all of the symmetry operators in $S$ are applied to $\mathcal{T}$, then we would recover $\mathbb{Z}^2$. Also note that the representation of $\mathcal{T}$ is not unique; Figure \ref{fig:unique_freqs_quad}(b) shows an alternative representation that is equally valid. Representations of $\mathcal{T}$ used in this work for triangles, quadrilaterals, tetrahedrons, and hexahedrons are given in Appendix \ref{sec:symmetry_groups}. Additionally, note that by writing the Fourier series using complex exponentials (as expressed in Equation \ref{eq:fourier_series}), Equation \ref{eq:basis_function} is, in general, a function that takes in real-valued $d$-D points and returns complex valued scalars, i.e. $\phi_{\mathbf{f}}(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{C}$. However, for the purpose of generating implicit surfaces, only the real or imaginary part (but not both) of the final expression for $\Phi(\mathbf{x})$ will be used.
 
-There are many reasons, both mathematical and practical, as to why the 3D Fourier series is an excellent choice for the foundational basis function, but the primary reasons are: 3D Fourier series are an orthonormal basis, 3D Fourier series have a very simple expression for the gradient (this is used in Section \ref{sec:face_normal_surfaces}); there are fast, robust algorithms available (most notably, the fast Fourier transform) for computing the cofficients of a 3D Fourier expansion; and finally, several famous triply periodic minimal surfaces (TPMS) that are commonly used to construct hierarchical lattice structures (e.g. Schwarz primitive, gyroid) may be approximated using 3D Fourier series \cite{wohlgemuth2001triply}.
+There are many reasons, both mathematical and practical, as to why the Fourier series is an excellent choice for the foundational basis function, but the primary reasons are: Fourier series are an orthonormal basis, Fourier series have a very simple expression for the gradient (this is used in Section \ref{sec:face_normal_surfaces}); there are fast, robust algorithms available (most notably, the fast Fourier transform) for computing the cofficients of a Fourier expansion; and finally, several famous triply periodic minimal surfaces (TPMS) that are commonly used to construct hierarchical lattice structures (e.g. Schwarz primitive, gyroid) may be approximated using Fourier series \cite{wohlgemuth2001triply}.
 
-Substituting Equation \ref{eq:fourier_series} into Equation \ref{eq:basis_function}, the basis function with tetrahedral symmetry may be expressed as
+Substituting Equation \ref{eq:fourier_series} into Equation \ref{eq:basis_function}, the symmetric basis function may be expressed as
 %
 \begin{equation}
   \label{eq:basis_function_actual}
-  \phi_{\mathbf{f}}(\mathbf{x}) = K_{\mathbf{f}} \sum\limits_{\mathbf{Q} \in T_d} e^{2 \pi i \mathbf{f}^T \mathbf{Q} \mathbf{x}}
+  \phi_{\mathbf{f}}(\mathbf{x}) = K_{\mathbf{f}} \sum\limits_{\mathbf{Q} \in \mathcal{S}} e^{2 \pi i \mathbf{f}^T \mathbf{Q} \mathbf{x}}
 \end{equation}
 %
 where $K_{\mathbf{f}}$ is the normalization coefficient given by
 %
 \begin{equation}
   \label{eq:normalization_coeff}
-  K_{\mathbf{f}} = \frac{1}{\sqrt{ \iiint_\Omega \left( \sum\limits_{\mathbf{Q_1}, \mathbf{Q_2} \in T_d} e^{2 \pi i \mathbf{f}^T (\mathbf{Q_1 - Q_2}) \mathbf{x}} \right) dV }}
+  K_{\mathbf{f}} = \frac{1}{\sqrt{ \iiint_\Omega \left( \sum\limits_{\mathbf{Q_1}, \mathbf{Q_2} \in \mathcal{S}} e^{2 \pi i \mathbf{f}^T (\mathbf{Q_1 - Q_2}) \mathbf{x}} \right) dV }}
 \end{equation}
 %
-where the region of integration $\Omega$ is the unit cube (with side length of 1) centered at the origin. In the integrand in the denominator of Equation \ref{eq:normalization_coeff}, due to the orthonormal property of 3D Fourier series, only terms where $\mathbf{f}^T (\mathbf{Q_1 - Q_2}) = \mathbf{0}$ contribute to the integral.
+where the region of integration $\Omega$ is either the unit square (with side length of 1) centered at the origin for $d = 2$ or the unit cube (with side length of 1) centered at the origin for $d = 3$. In the integrand in the denominator of Equation \ref{eq:normalization_coeff}, due to the orthonormal property of Fourier series, only terms where $\mathbf{f}^T (\mathbf{Q_1 - Q_2}) = \mathbf{0}$ contribute to the integral.
 
-Just like the 3D Fourier series, the resulting basis function in Equation \ref{eq:basis_function_actual} is orthonormal, i.e.
+Just like the Fourier series, the resulting basis function in Equation \ref{eq:basis_function_actual} is orthonormal, i.e.
 %
 \begin{equation}
   \begin{split}
@@ -225,13 +235,13 @@ Just like the 3D Fourier series, the resulting basis function in Equation \ref{e
   \end{split}
 \end{equation}
 %
-for some arbitrary $\mathbf{f} \in \mathcal{T}$, $\mathbf{g} \in \mathcal{T}$, and $\mathbf{f} \neq \mathbf{g}$. However, unlike the 3D Fourier series, Equation \ref{eq:basis_function_actual} also has tetrahedral symmetry. Finally, the implicit surface $\Phi(\mathbf{x})$ may be expressed in terms of the basis functions as
+for some arbitrary $\mathbf{f} \in \mathcal{T}$, $\mathbf{g} \in \mathcal{T}$, and $\mathbf{f} \neq \mathbf{g}$. The implicit surface $\Phi(\mathbf{x})$ may now be expressed in terms of a sum of the basis functions:
 %
 \begin{equation}
   \Phi(\mathbf{x}) = \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} \phi_{\mathbf{f}}(\mathbf{x})
 \end{equation}
 %
-where $c_{\mathbf{f}}$ are the weight coefficients for each basis function. As previously mentioned, the return value of $\Phi(\mathbf{x})$ is, in general, complex-valued, so only the real or imaginary part of the result will be used.
+where $c_{\mathbf{f}}$ are the weight coefficients for each basis function.
 
 Given an arbitrary input implicit surface $g(\mathbf{x}): \mathbb{R}^3 \rightarrow \mathbb{R}$, which may or may not possess tetrahedral symmetry, a tetrahedrally symmetric approximation to $g(\mathbf{x})$ may be computed by projecting $g(\mathbf{x})$ onto the basis functions to recover the weight coefficients:
 %
@@ -240,22 +250,25 @@ Given an arbitrary input implicit surface $g(\mathbf{x}): \mathbb{R}^3 \rightarr
   c_{\mathbf{f}} = \iiint_{\Omega} g(\mathbf{x}) \phi_{\mathbf{f}}(\mathbf{x}) dV
 \end{equation}
 %
-In this case, because the input function $g(\mathbf{x})$ is real-valued, the output function $\Phi(\mathbf{x})$ will also be real-valued. In practice, Equation \ref{eq:weight_coeffs} will be evaluated numerically, and the input geometry to approximate does not have to be an implicit surface, as demonstrated in the following section.
+In this case, because the input function $g(\mathbf{x})$ is real-valued, the output function $\Phi(\mathbf{x})$ will also be real-valued. In practice, Equation \ref{eq:weight_coeffs} will be evaluated numerically, and the input geometry to approximate does not have to be an implicit surface equation, as demonstrated in the following section.
 
 \subsection{Converting Geometry Representations to Implicit Surfaces}
 
-Frequently, a user will choose a unit cell geometry based on some criteria (e.g. aesthetics, porosity, mechanical performance, etc.) to tile to create the hierarchical lattice structure. The input unit cell to tile might not be an implicit surface; furthermore, it might not have tetrahedral symmetry either. To accomodate nearly arbitrary incoming geometry representations (e.g. triangle meshes, NURBS, voxel grids), the only requirement is that the input representation has a method to determine whether a query point is inside or outside the geometry. For example, inside/outside queries on oriented point clouds and triangle meshes/soups can be computed extremely robustly using the fast winding number method \cite{barill2018fast}.
+Frequently, a user will choose a unit cell geometry based on some criteria (e.g. aesthetics, porosity, mechanical performance, etc.) to create the hierarchical structure. The input unit cell to tile might not be an implicit surface; furthermore, it might not have \textit{any} symmetry either. To accomodate nearly arbitrary incoming geometry representations (e.g. triangle meshes, NURBS, voxel grids), the only requirement is that the input representation has a method to determine whether a query point is inside or outside the geometry. For example, inside/outside queries on oriented point clouds and triangle meshes/soups can be computed extremely robustly using the fast winding number method \cite{barill2018fast}.
 
-To numerically compute the implicit surface approximation $\Phi(\mathbf{x})$, first, the input geometry should be centered at the origin and be fully contained by the unit tetrahedron described in TODO. The input geometry is then sampled by querying the inside/outside status on an $N \times N \times N$ grid of query points. The query points should equispaced sampled on the domain $[-0.5, 0.5)$, meaning the spacing between adjacement points in the Cartesian directions is $\frac{1}{N}$. Inside points are assigned a scalar value of $-1$ while outside points are assigned a scalar value of $+1$. Next, the fast Fourier transform (FFT) is applied to the inside/outside samples. Finally, the weight coefficients $c_{\mathbf{f}}$ may be computed from the FFT result by noting that the right hand side of Equation \ref{eq:normalization_coeff} is simply a summation of FFT coefficients due to the fact that $\phi_{\mathbf{f}}(\mathbf{x})$ is a summation of 3D complex exponentials.
+To numerically compute the implicit surface approximation $\Phi(\mathbf{x})$, first, the input geometry should be centered at the origin and be fully contained by the unit square (for $d = 2$) or the unit cube (for $d = 3$). The input geometry is then sampled by querying the inside/outside status on an $N \times N \times N$ grid of query points. The query points should equispaced sampled on the domain $[-0.5, 0.5)$ in every Cartesian direction, meaning the spacing between adjacent points along the Cartesian directions is $\frac{1}{N}$. Inside points are assigned a scalar value of $-1$ while outside points are assigned a scalar value of $+1$. Next, the fast Fourier transform (FFT) is applied to the inside/outside samples. Finally, the weight coefficients $c_{\mathbf{f}}$ may be computed from the FFT result by noting that the right hand side of Equation \ref{eq:weight_coeffs} is simply a summation of FFT coefficients due to the fact that $\phi_{\mathbf{f}}(\mathbf{x})$ is a summation of 3D complex exponentials.
 
-It is worth noting that if the input geometry is band limited (i.e. the input geometry is generated from a 3D Fourier series implicit equation with a finite set of spatial frequencies), then using the FFT to compute the weight coefficients $c_{\mathbf{f}}$ will be exact up to limitations in floating point computations, as long as $N$ is large enough to satisfy the Nyquist-Shannon sampling theorem, i.e. $h < \frac{N}{2}$ where $h \in \mathbb{Z}$ is the maximum magnitude integer frequency in any Cartesian direction of the input geometry. However, if the input geometry is not band limited (e.g. there are sharp edges and corners), then this method will only yield approximate values of $c_{\mathbf{f}}$ due to aliasing. In practice, given some arbitrary input geometry that may or may not be band limited, one can choose some reasonable starting value for $N$ such that the FFT can compute relatively quickly (for example $N = 2^7$), compute the implicit surface approximation to the input, and use some stopping criteria to determine if $N$ is large enough. One example of stopping criteria is the Hausdorff distance between the input geometry and output approximation. Furthermore, choosing powers of two for values of $N$ is practical due to exploiting efficiencies in the FFT algorithm. The topic of convergence of the Fourier series is well studied in literature. Since the main purpose of this paper is to develop methods to generate hierarchical structures, i.e. the main purpose is \textit{not} about the convergence of 3D Fourier series or the tetrahedrally symmetric basis function, most examples in this paper will use some arbitrarily chosen value for $N$.
+It is worth noting that if the input geometry is band limited (i.e. the input geometry is generated from a 3D Fourier series implicit equation with a finite set of spatial frequencies), then using the FFT to compute the weight coefficients $c_{\mathbf{f}}$ will be exact up to limitations in floating point computations, as long as $N$ is large enough to satisfy the Nyquist-Shannon sampling theorem, i.e. $h < \frac{N}{2}$ where $h \in \mathbb{Z}$ is the maximum magnitude integer frequency in any Cartesian direction of the input geometry. However, if the input geometry is not band limited (e.g. there are sharp edges and corners), then this method will only yield approximate values of $c_{\mathbf{f}}$ due to aliasing. In practice, given some arbitrary input geometry that may or may not be band limited, one can choose some reasonable starting value for $N$ such that the FFT can compute relatively quickly (for example $N = 2^7$), compute the implicit surface approximation to the input, and use some stopping criteria to determine if $N$ is large enough. One example of stopping criteria is the Hausdorff distance between the input geometry and output approximation. Furthermore, choosing powers of two for values of $N$ is practical due to exploiting efficiencies in the FFT algorithm. The topic of convergence of the Fourier series is well studied in literature. Since the main purpose of this paper is to develop methods to generate hierarchical structures, i.e. the main purpose is \textit{not} about the convergence of Fourier series, most examples in this paper will use some arbitrarily chosen value for $N$.
 
-The preceding section utilized inside/outside queries of the input geometry to develop the implicit surface approximation. More useful results can be achieved if the signed distance of the input representation can be computed at query points. This enables finding a tetrahedrally symmetric implicit equation approximation to the signed distance function (SDF) of the input geometry. For example, once the SDF approximation is computed, it is trivial to compute dilations and erosions (see Section \ref{sec:dilation_erosion_inversion}). Using the sampled SDF as input will also yield a smoother approximation since the inputs are no longer binary. Because of this, most examples in this paper use the sampled SDF to compute the implicit surface approximation.
+The preceding section utilized inside/outside queries of the input geometry to develop the implicit surface approximation. More useful results can be achieved if the signed distance of the input representation can be computed at query points. This enables finding a symmetric implicit equation approximation to the signed distance function (SDF) of the input geometry. For example, once the SDF approximation is computed, it is trivial to compute approximate dilations and erosions (see Section \ref{sec:dilation_erosion_inversion}). Using the sampled SDF as input will also yield a smoother approximation since the inputs are no longer binary. Because of this, most examples in this paper use the sampled SDF to compute the implicit surface approximation.
 
 \subsection{Face Normal Surfaces}
 \label{sec:face_normal_surfaces}
 
-\subsection{Tiling Tetrahedron Mesh Scaffolds}
+\subsection{Tiling Mesh Scaffolds}
+\label{sec:tiling_mesh_scaffolds}
+
+\subsubsection{Higher Order Mesh Scaffolds}
 
 \subsection{Dilation, Erosion, and Inversion}
 \label{sec:dilation_erosion_inversion}
@@ -267,6 +280,7 @@ The preceding section utilized inside/outside queries of the input geometry to d
 \subsubsection{Minkowski Sum and Difference}
 
 \subsection{Spatial Transitions}
+\label{sec:spatial_transitions}
 
 \subsection{Generalizing to Other Symmetry Groups}
 
@@ -302,7 +316,7 @@ TODO
 
 \section{Symmetry Groups}
 \label{sec:symmetry_groups}
-All symmetry operators here are written in crystallographic notation, composed of a $d$-tuple representing the result of applying a linear transformation to a point $\mathbf{x} \in \mathbb{R}^d$. An overbar denotes negation. For example, $x, \overline{z}, y$ represents the linear transformation
+All symmetry operators here are written in crystallographic notation, composed of a $d$-tuple representing the result of applying a linear transformation to a point $\mathbf{x} \in \mathbb{R}^d$ (affine symmetry operators are not used in this work). An overbar denotes negation. For example, $x, \overline{z}, y$ represents the linear transformation
 \begin{equation}
   \begin{bmatrix}
     1 & 0 & 0 \\
@@ -321,7 +335,7 @@ All symmetry operators here are written in crystallographic notation, composed o
     y \\
   \end{bmatrix}
 \end{equation}
-
+An authoritative source enumerating all space groups is the International Tables of Crystallography \cite{aroyo2016}.
 
 \subsection{Dihedral Group of Degree 3 and Order 6}
 The dihedral group of degree 3 and order 6 ($D_3$) is the symmetry group of an equilateral triangle.
@@ -332,8 +346,18 @@ The dihedral group of degree 4 and order 8 ($D_4$) is the symmetry group of a sq
 \subsection{Achiral Tetrahedral Symmetry}
 Achiral tetrahedral symmetry ($T_d$) is the symmetry group of a regular tetrahedron.
 
+\begin{equation}
+  \mathcal{T} = \left\{ \begin{bmatrix} f_x \\ f_y \\ f_z \end{bmatrix} \in \mathbb{Z}^3 | f_y + f_z \geq 0 \: \text{and} f_y - f_z \geq 0 \: \text{and} f_x - f_y \geq 0 \right\}
+\end{equation}
+
 \subsection{Achiral Octahedral Symmetry}
-Achiral tetrahedral symmetry ($O_h$) is the symmetry group of a cube (as well as that of a regular octahedron, hence the name).
+Achiral tetrahedral symmetry ($O_h$) is the symmetry group of a cube (as well as that of a regular octahedron, hence the name). There are 48 symmetry operators.
+\begin{equation}
+  \begin{split}
+    x, y, z \\
+    x, \overline{y}, \overline{z} \\
+  \end{split}
+\end{equation}
 
 \end{document}
 \endinput
