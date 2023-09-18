@@ -115,7 +115,7 @@
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-  We present a framework for generating hierarchical structures using a palette of symmetric implicit surface microstructures. The framework utilizes an unstructured mesh composed of either triangles, quadrilaterals, tetrahedrons, or hexahedrons to serve as a scaffold for microstructural unit cells to tile, where each unit cell is represented by an implicit surface and defined using a set of symmetric basis functions derived from Fourier series. Any arbitrary input geometry may be converted into a symmetric implicit surface using an Fast-Fourier-Transform-based method as long as inside/outside queries can be performed on the input geometry. Using our framework, we demonstrate blending together different unit cells to create new ones as well as spatial transitions between different unit cells. In addition, we present a method to constrain unit cells to intersect its bounding polygon/polyhedron at a right angle, which we postulate is necessary for $C^1$ continuity. Finally, we briefly mention some mechanical applications that may benefit from our framework.
+  We present a framework for generating hierarchical structures using a palette of symmetric implicit surface microstructures. The framework utilizes an unstructured mesh composed solely of triangles, quadrilaterals, tetrahedrons, or hexahedrons to serve as a scaffold for microstructural unit cells to tile, where each unit cell is represented by an implicit surface and defined using a set of symmetric basis functions derived from Fourier series. Any arbitrary input geometry may be converted into a symmetric implicit surface using an Fast-Fourier-Transform-based method as long as inside/outside queries can be performed on the input geometry. Using our framework, we demonstrate blending together different unit cells to create new ones as well as spatial transitions between different unit cells. In addition, we present a method to constrain unit cells to intersect its bounding polygon/polyhedron at a right angle, which we postulate is necessary for $C^1$ continuity. Finally, we briefly mention some mechanical applications that may benefit from our framework.
 \end{abstract}
 
 %%
@@ -163,7 +163,13 @@
 \section{Introduction}
 
 \subsection{Contributions}
-To the best of our knowledge, this work is the first to present a framework for generating hierarchical structures using \textit{unstructured} scaffold meshes composed solely of one element type: triangles, quadrilaterals, tetrahedrons, and hexahedrons. Furthermore, this work is the first to present a method of transitioning between arbitrarily chosen unit cells within the unstructured scaffold mesh. By supporting the most common unstructured mesh types, we ensure that our framework is compatible with a wide range of off-the-shelf mesh generators and can be used to generate hierarchical structures of complex design domains that are practically unsuitable for structured meshing.
+To the best of our knowledge, this work is the first to present a framework for generating hierarchical structures using \textit{unstructured} scaffold meshes composed solely of one element type: triangles, quadrilaterals, tetrahedrons, and hexahedrons. Furthermore, this work is the first to present a method of transitioning between arbitrarily chosen unit cells within the unstructured scaffold mesh. By supporting the most common unstructured mesh types, we ensure that our framework is compatible with a wide range of off-the-shelf mesh generators and can be used to generate hierarchical structures from complex design domains that are practically unsuitable for structured meshing.
+
+In short, this paper makes the following contributions:
+% TODO(rchensix): Add more contributions
+\begin{itemize}
+  \item We develop a novel method to constrain the unit cell to intersect its bounding polygon/polyhedron at a right angle by formulating a constrained convex optimization problem that is always feasible.
+\end{itemize}
 
 \section{Related Works}
 
