@@ -244,6 +244,7 @@ Just like the Fourier series, the resulting basis function in Equation \ref{eq:b
 for some arbitrary $\mathbf{f} \in \mathcal{T}$, $\mathbf{g} \in \mathcal{T}$, and $\mathbf{f} \neq \mathbf{g}$. The implicit surface $\Phi(\mathbf{x})$ may now be expressed in terms of a sum of the basis functions:
 %
 \begin{equation}
+  \label{eq:symmetric_implicit_surface}
   \Phi(\mathbf{x}) = \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} \phi_{\mathbf{f}}(\mathbf{x})
 \end{equation}
 %
@@ -271,10 +272,42 @@ The preceding section utilized inside/outside queries of the input geometry to d
 \subsection{Face Normal Surfaces}
 \label{sec:face_normal_surfaces}
 
+In addition to symmetry constraints, the implicit surface unit cell can be further constrained to intersect with its bounding polygon/polyhedron at a right angle. We postulate this is an important property to have in order to generate hierarchical structures with $C^1$ continuity in higher order meshes with $C^1$ continuity constraints applied to control points (see Section \ref{sec:higher_order_scaffolds}). To apply this face normal constraint, we first note that the outward normal vector of an implicit surface is given by its gradient:
+%
+\begin{equation}
+  \mathbf{N}(\mathbf{x}) = \nabla \Phi(\mathbf{x})
+\end{equation}
+%
+To constrain the implicit surface to intersect its bounding polygon/polyhedron at a right angle, we need its outward normal to be at a right angle to the outward normal $\mathbf{N}_p$ of the polygon/polyhedron face. Thus, the dot product between these two vectors must be zero when evaluated on the polygon/polyhedron faces:
+%
+\begin{equation}
+  \label{eq:face_normal_constraint}
+  \nabla \Phi(\mathbf{x}) \cdot \mathbf{N}_p \rvert \mathbf{x} \rightarrow \mathbf{x}_p = 0
+\end{equation}
+%
+where $\mathbf{x}_p$ is a point on the bounding polygon/polyhedron face. Note that due to the symmetry constraint already imposed from our usage of symmetric basis functions, we only need to satisfy Equation \ref{eq:face_normal_constraint} on one face of the bounding polygon/polyhedron, as it will be automatically applied to the other faces. We can rewrite $\mathbf{x}_p$ as
+%
+\begin{equation}
+  \label{eq:face_projection}
+  \mathbf{x}_p = \mathbf{A} \mathbf{x} + \mathbf{b}
+\end{equation}
+%
+where $\mathbf{A} : \mathbb{R}^{d \times d}$ is a projection matrix and $\mathbf{b} : \mathbb{R}^d $ is an offset term. Equation \ref{eq:face_projection} can be geometrically interpreted as projecting a point $\mathbf{x}$ onto the extended plane of the chosen face of the bounding polygon/polyhedron. Using Equation \ref{eq:basis_function_actual} and \ref{eq:symmetric_implicit_surface}, the gradient term can be written as:
+%
+\begin{equation}
+  \begin{split}
+    \nabla \Phi(\mathbf{x}) &= \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} \nabla \phi_{\mathbf{f}}(\mathbf{x}) \\
+    %
+    &= 2 \pi i \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} K_{\mathbf{f}} \sum\limits_{\mathbf{Q} \in \mathcal{S}} \mathbf{Q}^T \mathbf{f} e^{2 \pi i \mathbf{f}^T \mathbf{Q} \mathbf{x}}
+  \end{split}
+\end{equation}
+%
+
 \subsection{Tiling Mesh Scaffolds}
 \label{sec:tiling_mesh_scaffolds}
 
 \subsubsection{Higher Order Mesh Scaffolds}
+\label{sec:higher_order_scaffolds}
 
 \subsection{Dilation, Erosion, and Inversion}
 \label{sec:dilation_erosion_inversion}
