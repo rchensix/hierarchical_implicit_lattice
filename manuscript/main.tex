@@ -229,6 +229,7 @@ where $K_{\mathbf{f}}$ is the normalization coefficient given by
   K_{\mathbf{f}} = \frac{1}{\sqrt{ \iiint_\Omega \left( \sum\limits_{\mathbf{Q_1}, \mathbf{Q_2} \in \mathcal{S}} e^{2 \pi i \mathbf{f}^T (\mathbf{Q_1 - Q_2}) \mathbf{x}} \right) dV }}
 \end{equation}
 %
+% TODO(rchensix): Need to explain "extended" domain, i.e. unit cube for tetrahedrons and unit rhombus for triangles, which permit orthogonal Fourier series basis functions.
 where the region of integration $\Omega$ is either the unit square (with side length of 1) centered at the origin for $d = 2$ or the unit cube (with side length of 1) centered at the origin for $d = 3$. In the integrand in the denominator of Equation \ref{eq:normalization_coeff}, due to the orthonormal property of Fourier series, only terms where $\mathbf{f}^T (\mathbf{Q_1 - Q_2}) = \mathbf{0}$ contribute to the integral.
 
 Just like the Fourier series, the resulting basis function in Equation \ref{eq:basis_function_actual} is orthonormal, i.e.
