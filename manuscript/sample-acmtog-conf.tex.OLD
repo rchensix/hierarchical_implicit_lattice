@@ -1,17 +1,17 @@
 %%
-%% This is file `sample-acmtog.tex',
+%% This is file `sample-acmtog-conf.tex',
 %% generated with the docstrip utility.
 %%
 %% The original source files were:
 %%
-%% samples.dtx  (with options: `all,journal,bibtex,acmtog')
+%% samples.dtx  (with options: `all,journal,proceedings,bibtex,acmtog-conf')
 %% 
 %% IMPORTANT NOTICE:
 %% 
 %% For the copyright see the source file.
 %% 
 %% Any modified versions of this file must be renamed
-%% with new filenames distinct from sample-acmtog.tex.
+%% with new filenames distinct from sample-acmtog-conf.tex.
 %% 
 %% For distribution of the original source see the terms
 %% for copying and modification in the file samples.dtx.
@@ -60,10 +60,21 @@
 \copyrightyear{2018}
 \acmYear{2018}
 \acmDOI{XXXXXXX.XXXXXXX}
+%% These commands are for a PROCEEDINGS abstract or paper.
+\acmConference[Conference acronym 'XX]{Make sure to enter the correct
+  conference title from your rights confirmation email}{June 03--05,
+  2018}{Woodstock, NY}
+%%
+%%  Uncomment \acmBooktitle if the title of the proceedings is different
+%%  from ``Proceedings of ...''!
+%%
+%%\acmBooktitle{Woodstock '18: ACM Symposium on Neural Gaze Detection,
+%%  June 03--05, 2018, Woodstock, NY}
+\acmISBN{978-1-4503-XXXX-X/2018/06}
 
 %%
 %% These commands are for a JOURNAL article.
-\acmJournal{TOG}
+%\acmJournal{TOG} % Comment out journal to get conference info in bibstrip.
 \acmVolume{37}
 \acmNumber{4}
 \acmArticle{111}
@@ -826,4 +837,4 @@ massa et mattis lacinia.
 \end{document}
 \endinput
 %%
-%% End of file `sample-acmtog.tex'.
+%% End of file `sample-acmtog-conf.tex'.
