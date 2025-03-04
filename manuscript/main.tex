@@ -175,7 +175,7 @@ Implicit surfaces represent a geometric object through an equation of the form $
 
 A symmetric implicit surface is defined in this work to be an implicit surface equation that is invariant under transformations from a chosen point group $\mathcal{S}$. In other words, $\Phi(\mathbf{x}) = \Phi(\mathbf{Q} \mathbf{x})$, where $\mathbf{Q}: \mathbb{R}^{d \times d} \in \mathcal{S}$ is an orthonormal matrix that represents an isometry (i.e. rotation, reflection, inversion, or rotoinversion of a point $\mathbf{x}$ about the origin). To construct an implicit surface suitable for generating hierarhical structures, we want to constrain the implicit surface to match the symmetry group of the cell type in the unstructured scaffold mesh to tile: dihedral group of degree 3 and order 6 ($D_3$) for triangle meshes, dihedral group of degree 4 and order 8 ($D_4$) for quadrilateral meshes, achiral tetrahedral symmetry ($T_d$) for tetrahedron meshes, and achiral octahedral symmetry ($O_h$) for hexahedron meshes. The list of symmetry operators for these four symmetry groups is given in Appendix \ref{sec:symmetry_groups}. The necessity of symmetric implicit surfaces to tile the unstructured scaffold mesh is explained in detail in Section \ref{sec:tiling_mesh_scaffolds}, but in brief, it is the symmetry that ensures $C^0$ continuity at the boundaries of the hierarchical structure. Furthermore, symmetry is crucial for enabling the spatial transitions described in Section \ref{sec:spatial_transitions}.
 
-To construct a symmetric implicit surface $\Phi(\mathbf{x})$, we first construct an orthonormal basis function $\phi(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{R}$ that is inherently symmetric. The symmetric basis function is constructed from some other conventional orthonormal basis function $\psi(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{R}$ by iterating over the symmetry operators $\mathbf{Q}$ and summing together $\psi$ composed with the linear transformation of $\mathbf{x}$ by $\mathbf{Q}$:
+To construct a symmetric implicit surface $\Phi(\mathbf{x})$, we first construct a symmetric orthonormal basis function $\phi(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{R}$. The symmetric basis function is constructed from some other conventional (i.e. non-symmetric) orthonormal basis function $\psi(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{R}$ by iterating over the symmetry operators $\mathbf{Q}$ and summing together $\psi$ composed with the linear transformation of $\mathbf{x}$ by $\mathbf{Q}$:
 %
 \begin{equation}
   \label{eq:basis_function}
@@ -189,24 +189,24 @@ where $K$ is some normalization factor to make the basis function orthonormal. I
   \psi_{\mathbf{f}}(\mathbf{x}) = e^{2\pi i \mathbf{f}^T \mathbf{x}}
 \end{equation}
 %
-is used, where $\mathbf{f}: \mathbb{R}^d \in \mathcal{T}$ is an integer-valued vector that represents spatial frequencies in the Cartesian directions, and $\mathcal{T} \subset \mathbb{Z}^d$ is a subset of the $d$-dimensional integer lattice that is specific to the chosen scaffold mesh type. In other words, $\mathcal{T}$ contains all of the \textit{unique} spatial frequencies that may be used to construct a symmetric basis functions. Any spatial frequencies not in $\mathcal{T}$ do not need to be considered due to symmetry. For example, suppose the scaffold mesh is a quadrilateral mesh, then one representation for $\mathcal{T}$ is given by
+is used, where $\mathbf{f}: \mathbb{R}^d \in \mathcal{F}$ is an integer-valued vector that represents spatial frequencies in the Cartesian directions, and $\mathcal{F} \subset \mathbb{Z}^d$ is a subset of the $d$-dimensional integer lattice that is specific to the chosen scaffold mesh type. In other words, $\mathcal{F}$ contains all of the \textit{unique} spatial frequencies that may be used to construct a symmetric basis functions. Any spatial frequencies not in $\mathcal{F}$ do not need to be considered due to symmetry. For example, suppose the scaffold mesh is a quadrilateral mesh, then one representation for $\mathcal{F}$ is given by
 %
 \begin{equation}
-  \mathcal{T} = \left\{ (f_x, f_y) \in \mathbb{Z}^2 | f_y \geq 0 \: \text{and} \: f_x - f_y \geq 0 \right\}
+  \mathcal{F} = \left\{ (f_x, f_y) \in \mathbb{Z}^2 | f_y \geq 0 \: \text{and} \: f_x - f_y \geq 0 \right\}
 \end{equation}
 %
-This representation of $\mathcal{T}$ for a quadrilateral mesh is depicted in Figure \ref{fig:unique_freqs_quad}(a).
+This representation of $\mathcal{F}$ for a quadrilateral mesh is depicted in Figure \ref{fig:unique_freqs_quad}(a).
 %
 \begin{figure}
   \centering
   \includegraphics[width=0.45\textwidth]{figures/quad_z_lattice_points.pdf}
-  \caption{A subset $\mathcal{T}$ of the $\mathbb{Z}^2$ lattice defines unique spatial frequencies that can be used to generate unit cells with $D_4$ symmetry. Both (a) and (b) are valid representations for $\mathcal{T}$, and it is a matter of user preference to choose.}
+  \caption{A subset $\mathcal{F}$ of the $\mathbb{Z}^2$ lattice defines unique spatial frequencies that can be used to generate unit cells with $D_4$ symmetry. Both (a) and (b) are valid representations for $\mathcal{F}$, and it is a matter of user preference to choose.}
   \label{fig:unique_freqs_quad}
 \end{figure}
 %
-Note that if all of the symmetry operators in $S$ are applied to $\mathcal{T}$, then we would recover $\mathbb{Z}^2$. Also note that the representation of $\mathcal{T}$ is not unique; Figure \ref{fig:unique_freqs_quad}(b) shows an alternative representation that is equally valid. Representations of $\mathcal{T}$ used in this work for triangles, quadrilaterals, tetrahedrons, and hexahedrons are given in Appendix \ref{sec:symmetry_groups}. Additionally, note that by writing the Fourier series using complex exponentials (as expressed in Equation \ref{eq:fourier_series}), Equation \ref{eq:basis_function} is, in general, a function that takes in real-valued $d$-D points and returns complex valued scalars, i.e. $\phi_{\mathbf{f}}(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{C}$. However, for the purpose of generating implicit surfaces, only the real or imaginary part (but not both) of the final expression for $\Phi(\mathbf{x})$ will be used.
+Note that if all of the symmetry operators in $S$ are applied to $\mathcal{F}$, then we would recover $\mathbb{Z}^2$. Also note that the representation of $\mathcal{F}$ is not unique; Figure \ref{fig:unique_freqs_quad}(b) shows an alternative representation that is equally valid. Representations of $\mathcal{F}$ used in this work for triangles, quadrilaterals, tetrahedrons, and hexahedrons are given in Appendix \ref{sec:symmetry_groups}. Additionally, note that by writing the Fourier series using complex exponentials (as expressed in Equation \ref{eq:fourier_series}), Equation \ref{eq:basis_function} is, in general, a function that takes in real-valued $d$-D points and returns complex valued scalars, i.e. $\phi_{\mathbf{f}}(\mathbf{x}): \mathbb{R}^d \rightarrow \mathbb{C}$. However, for the purpose of generating implicit surfaces, only the real or imaginary part (but not both) of the final expression for $\Phi(\mathbf{x})$ will be used.
 
-There are many reasons, both mathematical and practical, as to why the Fourier series is an excellent choice for the foundational basis function, but the primary reasons are: Fourier series are an orthonormal basis, Fourier series have a very simple expression for the gradient (this is used in Section \ref{sec:face_normal_surfaces}); there are fast, robust algorithms available (most notably, the fast Fourier transform) for computing the cofficients of a Fourier expansion; and finally, several famous triply periodic minimal surfaces (TPMS) commonly used to construct hierarchical lattice structures (e.g. Schwarz primitive, gyroid) may be approximated using Fourier series \cite{wohlgemuth2001triply}.
+There are many reasons, both mathematical and practical, as to why the Fourier series is an excellent choice for the foundational basis function, but the primary reasons are: Fourier series are an orthonormal basis, Fourier series have a very simple expression for the gradient (this is used in Section \ref{sec:face_normal_surfaces}); there are fast, robust algorithms available--most notably, the fast Fourier transform (FFT)--for computing the cofficients of a Fourier expansion; and finally, several famous triply periodic minimal surfaces (TPMS) commonly used to construct hierarchical lattice structures (e.g. Schwarz primitive, gyroid) may be approximated using Fourier series \cite{wohlgemuth2001triply}.
 
 Substituting Equation \ref{eq:fourier_series} into Equation \ref{eq:basis_function}, the symmetric basis function may be expressed as
 %
@@ -216,31 +216,27 @@ Substituting Equation \ref{eq:fourier_series} into Equation \ref{eq:basis_functi
 \end{equation}
 %
 where $K_{\mathbf{f}}$ is the normalization coefficient given by
-%
 \begin{equation}
   \label{eq:normalization_coeff}
-  K_{\mathbf{f}} = \frac{1}{\sqrt{ \iiint_\Omega \left( \sum\limits_{\mathbf{Q_1}, \mathbf{Q_2} \in \mathcal{S}} e^{2 \pi i \mathbf{f}^T (\mathbf{Q_1 - Q_2}) \mathbf{x}} \right) dV }}
+  K_{\mathbf{f}} = \left( \int_{\Omega}{ \sum\limits_{\mathbf{Q_1}, \mathbf{Q_2} \in \mathcal{S}} e^{2 \pi i \mathbf{f}^T (\mathbf{Q_1 - Q_2}) \mathbf{x}} d\mathbf{x} } \right)^{-1/2}
 \end{equation}
-%
-% TODO(rchensix): Need to explain "extended" domain, i.e. unit cube for tetrahedrons and unit rhombus for triangles, which permit orthogonal Fourier series basis functions.
-
-where the region of integration $\Omega$ is either the unit square (with side length of 1) centered at the origin for quadrilateral  or the unit cube (with side length of 1) centered at the origin for $d = 3$. In the integrand in the denominator of Equation \ref{eq:normalization_coeff}, due to the orthonormal property of Fourier series, only terms where $\mathbf{f}^T (\mathbf{Q_1 - Q_2}) = \mathbf{0}$ contribute to the integral.
+In the integrand in the denominator of Equation \ref{eq:normalization_coeff}, due to the orthonormal property of Fourier series, only terms where $\mathbf{f}^T \left( \mathbf{Q_1} - \mathbf{Q_2} \right) = \mathbf{0}$ contribute to the integral.
 
 Just like the Fourier series, the resulting basis function in Equation \ref{eq:basis_function_actual} is orthonormal, i.e.
 %
 \begin{equation}
   \begin{split}
-    \iiint_{\Omega} \phi_{\mathbf{f}}(\mathbf{x}) \overline{\phi_{\mathbf{g}}(\mathbf{x})} dV = 0 \\
+    \int_{\Omega} \phi_{\mathbf{f}}(\mathbf{x}) \overline{\phi_{\mathbf{g}}(\mathbf{x})} d\mathbf{x} = 0 \\
     %
-    \iiint_{\Omega} \phi_{\mathbf{f}}(\mathbf{x}) \overline{\phi_{\mathbf{f}}(\mathbf{x})} dV = 1 \\
+    \int_{\Omega} \phi_{\mathbf{f}}(\mathbf{x}) \overline{\phi_{\mathbf{f}}(\mathbf{x})} d\mathbf{x} = 1 \\
   \end{split}
 \end{equation}
 %
-for some arbitrary $\mathbf{f} \in \mathcal{T}$, $\mathbf{g} \in \mathcal{T}$, and $\mathbf{f} \neq \mathbf{g}$. The implicit surface $\Phi(\mathbf{x})$ may now be expressed in terms of a sum of the basis functions:
+for some $\mathbf{f}, \mathbf{g} \in \mathcal{F}$ and $\mathbf{f} \neq \mathbf{g}$. The symmetric implicit surface $\Phi(\mathbf{x})$ may now be expressed in terms of a sum of the basis functions:
 %
 \begin{equation}
   \label{eq:symmetric_implicit_surface}
-  \Phi(\mathbf{x}) = \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} \phi_{\mathbf{f}}(\mathbf{x})
+  \Phi(\mathbf{x}) = \sum\limits_{\mathbf{f} \in \mathcal{F}} c_{\mathbf{f}} \phi_{\mathbf{f}}(\mathbf{x})
 \end{equation}
 %
 where $c_{\mathbf{f}}$ are the weight coefficients for each basis function.
@@ -252,9 +248,39 @@ Given an arbitrary input implicit surface $g(\mathbf{x}): \mathbb{R}^3 \rightarr
   c_{\mathbf{f}} = \iiint_{\Omega} g(\mathbf{x}) \phi_{\mathbf{f}}(\mathbf{x}) dV
 \end{equation}
 %
-In this case, because the input function $g(\mathbf{x})$ is real-valued, the output function $\Phi(\mathbf{x})$ will also be real-valued. In practice, Equation \ref{eq:weight_coeffs} will be evaluated numerically, and the input geometry to approximate does not have to be an implicit surface equation, as demonstrated in the following section.
+In this case, because the input function $g(\mathbf{x})$ is real-valued, the output function $\Phi(\mathbf{x})$ will also be real-valued. In practice, Equation \ref{eq:weight_coeffs} will be evaluated numerically, and the input geometry to approximate does not have to be an implicit surface equation, as demonstrated in Section \ref{sec:converting_geometry}.
+
+\subsubsection{Choice of $\Omega$}
+
+Before proceeding, we need to clarify what the domain $\Omega$ is. Recall that the goal of defining these symmetric orthonormal basis functions is to use them to approximate an input unit cell geometry. Thus, $\Omega$ should be a (non-strict) superset of the domain of the unit cell geometry. However, $\Omega$ should also ideally be carefully chosen such that the $d$-dimensional Fourier series is an orthonormal basis in $\Omega$; while this is not strictly necessary for the purposes of approximating the unit cell geometry, it greatly simplifies things and enables us to utilize efficient algorithms such as the FFT and existing software packages (e.g. numpy.fft \cite{harris2020array} and scipy.fft \cite{virtanen2020scipy}) to compute the approximation. For unit cell geometries defined in the square or cube, the choice of $\Omega$ is trivial: $\Omega$ will be the square or cube, respectively. For unit cell geometries defined in the regular triangle or tetrahedron, we choose $\Omega$ to be an \textit{extended domain} that is a superset of the regular triangle or tetrahedron, and which the Fourier series is orthonormal.
+
+\subsubsection{Extended Domain for Triangle and Tetrahedron}
+
+For a regular triangle, $\Omega$ is chosen to be a rhombus with $60^\circ$ and $120^\circ$ interior angles (i.e. the union of two regular triangles). In addition, a skew coordinate system where $\mathbf{x_1}$ and $\mathbf{x_2}$ are $60^\circ$ apart is used so that the Fourier series expressed in this skew coordinate system is orthogonal. Note that we can easily make the Fourier series orthonormal in $\Omega$ by scaling by the square root of the Jacobian determinant:
+\begin{equation}
+  \sqrt{
+    \begin{vmatrix}
+      \mathbf{x_1} & \mathbf{x_2} \\
+    \end{vmatrix}
+  } = \sqrt{
+    \begin{vmatrix}
+      1 & \cos(60^{\circ}) \\
+      0 & \sin(60^{\circ}) \\
+    \end{vmatrix}
+  } = \sqrt{\frac{2}{\sqrt{3}}}
+\end{equation}
+A regular triangle, its extended domain $\Omega$, and the skew coordinate system are depicted in Figure \ref{fig:triangle_extended_domain_skew_coordinates}.
+
+For a regular tetrahedron, $\Omega$ is chosen to be the unit cube because, intuitively, both the cube and tetrahedron have $T_d$ symmetry (i.e. $T_d$ is a subgroup of $O_h$). A regular tetrahedron and its extended domain $\Omega$ are depicted in Figure \ref{fig:tetrahedron_extended_domain}.
+
+In addition to defining the extended domains, we also have to define how to extend the original unit cell geometries into the extended domains. In this work, we extend the unit cell geometry by mirroring the unit cell about the edges (faces) of the triangle (tetrahedron) until the entire extended domain is populated. This space-filling process intuitively mimics how hierarchical structures are constructed from a unit cell. Without this step, the approximate implicit surface geometries may "disappear" at the boundaries of the original unit cell.
+
+We note that the extended domains and methods of extending the original unit cell we have chosen are not unique.
+
+In addition, it is worth stepping back to understand \textit{why} we choose to use the method of extended domains rather than, say, some other orthonormal basis function that is orthonormal in the \textit{original} unit cell domain. The main reason is due to practicality: we want to use the Fourier series as our starting basis function to take advantage of the FFT algorithm and existing software libraries. If we were to use some other orthonormal basis, we would first have to \textit{find} some other orthonormal basis (via Gram-Schmidt or similar algorithms), then numerically evaluate the integrals to compute the coefficients for approximating the unit cell geometry. While all this is technically feasible, we suspect there may be some challenges with numerical stability and computational efficiency. Thus, we choose to use the method of extended domains in this paper instead.
 
 \subsection{Converting Geometry Representations to Implicit Surfaces}
+\label{sec:converting_geometry}
 
 Frequently, a user will choose a unit cell geometry based on some criteria (e.g. aesthetics, porosity, mechanical performance, etc.) to create the hierarchical structure. The input unit cell to tile might not be an implicit surface; furthermore, it might not have \textit{any} symmetry either. To accomodate nearly arbitrary incoming geometry representations (e.g. triangle meshes, NURBS, voxel grids), the only requirement is that the input representation has a method to determine whether a query point is inside or outside the geometry. For example, inside/outside queries on oriented point clouds and triangle meshes/soups can be computed extremely robustly using the fast winding number method \cite{barill2018fast}.
 
@@ -291,9 +317,9 @@ where $\mathbf{A} : \mathbb{R}^{d \times d}$ is a projection matrix and $\mathbf
 %
 \begin{equation}
   \begin{split}
-    \nabla \Phi(\mathbf{x}) &= \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} \nabla \phi_{\mathbf{f}}(\mathbf{x}) \\
+    \nabla \Phi(\mathbf{x}) &= \sum\limits_{\mathbf{f} \in \mathcal{F}} c_{\mathbf{f}} \nabla \phi_{\mathbf{f}}(\mathbf{x}) \\
     %
-    &= 2 \pi i \sum\limits_{\mathbf{f} \in \mathcal{T}} c_{\mathbf{f}} K_{\mathbf{f}} \sum\limits_{\mathbf{Q} \in \mathcal{S}} \mathbf{Q}^T \mathbf{f} e^{2 \pi i \mathbf{f}^T \mathbf{Q} \mathbf{x}}
+    &= 2 \pi i \sum\limits_{\mathbf{f} \in \mathcal{F}} c_{\mathbf{f}} K_{\mathbf{f}} \sum\limits_{\mathbf{Q} \in \mathcal{S}} \mathbf{Q}^T \mathbf{f} e^{2 \pi i \mathbf{f}^T \mathbf{Q} \mathbf{x}}
   \end{split}
 \end{equation}
 %
@@ -331,7 +357,7 @@ TODO optimizing weight coefficients to achieve some target, i.e. porosity, stiff
 
 \section{Conclusion}
 
-A publically available implementation of this work is available at \url{https://github.com/rchensix/tetrahedral_implicit_lattice} under an MIT License. However, please note that while the implementation itself falls under an MIT License, methods and ideas mentioned in this paper are, at the time of writing, under consideration for a patent \cite{chen2022}.
+A publically available implementation of this work is available at \url{https://github.com/rchensix/tetrahedral_implicit_lattice} under an MIT License. However, please note that while the implementation itself falls under an MIT License, methods and ideas mentioned in this paper are, at the time of writing, under consideration for a patent \cite{chen2022systems}.
 
 %%
 %% The acknowledgments section is defined using the "acks" environment
@@ -383,7 +409,7 @@ The dihedral group of degree 4 and order 8 ($D_4$) is the symmetry group of a sq
 Achiral tetrahedral symmetry ($T_d$) is the symmetry group of a regular tetrahedron.
 
 \begin{equation}
-  \mathcal{T} = \left\{ \begin{bmatrix} f_x \\ f_y \\ f_z \end{bmatrix} \in \mathbb{Z}^3 | f_y + f_z \geq 0 \: \text{and} f_y - f_z \geq 0 \: \text{and} f_x - f_y \geq 0 \right\}
+  \mathcal{F} = \left\{ \begin{bmatrix} f_x \\ f_y \\ f_z \end{bmatrix} \in \mathbb{Z}^3 | f_y + f_z \geq 0 \: \text{and} f_y - f_z \geq 0 \: \text{and} f_x - f_y \geq 0 \right\}
 \end{equation}
 
 \subsection{Achiral Octahedral Symmetry}
